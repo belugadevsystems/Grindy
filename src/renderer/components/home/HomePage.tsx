@@ -13,12 +13,11 @@ import { usePresenceSync } from '../../hooks/useProfileSync'
 import { categoryToSkillId, getSkillById } from '../../lib/skills'
 
 interface HomePageProps {
-  onShowStreak: (count: number) => void
   onNavigateProfile: () => void
 }
 
-export function HomePage({ onShowStreak, onNavigateProfile }: HomePageProps) {
-  const { showComplete, checkStreakOnMount, setCurrentActivity, status, currentActivity } = useSessionStore()
+export function HomePage({ onNavigateProfile }: HomePageProps) {
+  const { showComplete, setCurrentActivity, status, currentActivity } = useSessionStore()
   const [showWelcome, setShowWelcome] = useState(false)
 
   // Check if user is new (never started a grind)
@@ -54,20 +53,6 @@ export function HomePage({ onShowStreak, onNavigateProfile }: HomePageProps) {
     : null
   usePresenceSync(presenceLabel, status === 'running')
 
-  // Show streak overlay exactly once per app session (survives tab switches & remounts)
-  useEffect(() => {
-    if (sessionStorage.getItem('grinder_streak_shown')) return
-    let cancelled = false
-    checkStreakOnMount().then((streak) => {
-      if (!cancelled && streak >= 2) {
-        sessionStorage.setItem('grinder_streak_shown', '1')
-        onShowStreak(streak)
-      }
-    })
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electronAPI?.tracker?.onActivityUpdate) return
     const unsub = window.electronAPI.tracker.onActivityUpdate((a) => {
@@ -85,7 +70,7 @@ export function HomePage({ onShowStreak, onNavigateProfile }: HomePageProps) {
       className="flex flex-col h-full"
     >
       <ProfileBar onNavigateProfile={onNavigateProfile} />
-      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
         {/* Motivation / Welcome banner */}
         <div className="flex justify-center w-full px-4">
           <AnimatePresence mode="wait">

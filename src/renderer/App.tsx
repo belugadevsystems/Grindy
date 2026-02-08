@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { AuthGate } from './components/auth/AuthGate'
 import { useProfileSync } from './hooks/useProfileSync'
@@ -20,12 +20,26 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home')
   const [showStreak, setShowStreak] = useState(false)
   const [streakCount, setStreakCount] = useState(0)
+  const streakChecked = useRef(false)
   useProfileSync()
   useKeyboardShortcuts()
 
-  const handleShowStreak = useCallback((count: number) => {
-    setStreakCount(count)
-    setShowStreak(true)
+  // Check streak once on app startup, using SQLite to track "shown today"
+  useEffect(() => {
+    if (streakChecked.current) return
+    streakChecked.current = true
+    const api = window.electronAPI
+    if (!api?.db?.getStreak || !api?.db?.getLocalStat || !api?.db?.setLocalStat) return
+    const today = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
+    api.db.getLocalStat('streak_shown_date').then(async (savedDate) => {
+      if (savedDate === today) return
+      const streak = await api.db.getStreak()
+      if (streak >= 2) {
+        await api.db.setLocalStat('streak_shown_date', today)
+        setStreakCount(streak)
+        setShowStreak(true)
+      }
+    }).catch(() => {})
   }, [])
 
   const handleNavigateProfile = useCallback(() => setActiveTab('profile'), [])
@@ -39,7 +53,6 @@ export default function App() {
             {activeTab === 'home' && (
               <HomePage
                 key="home"
-                onShowStreak={handleShowStreak}
                 onNavigateProfile={handleNavigateProfile}
               />
             )}
