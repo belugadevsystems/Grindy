@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../stores/authStore'
 import { supabase } from '../../lib/supabase'
+import mascotImg from '../../assets/mascot.png'
 
 const AVATARS = ['🐺', '🦊', '🐱', '🐼', '🦁', '🐸', '🦉', '🐙', '🔥', '💀', '🤖', '👾']
 
@@ -124,15 +125,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
-        <div className="text-center mb-6">
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="text-4xl font-mono font-bold text-cyber-neon drop-shadow-[0_0_12px_rgba(0,255,136,0.5)] mb-2"
-          >
-            GRINDER
-          </motion.div>
-          <p className="text-gray-400 text-sm">
+        <div className="text-center mb-5">
+          <motion.img
+            src={mascotImg}
+            alt="Grinder"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="w-20 h-20 mx-auto mb-2 drop-shadow-[0_0_20px_rgba(128,90,213,0.5)]"
+            draggable={false}
+          />
+          <h1 className="text-2xl font-mono font-bold text-[#8b5cf6] drop-shadow-[0_0_12px_rgba(139,92,246,0.5)] mb-1 tracking-wider">
+            grinder
+          </h1>
+          <p className="text-gray-400 text-xs">
             {isSignUp ? 'Create your account to start grinding' : 'Welcome back, grinder'}
           </p>
         </div>

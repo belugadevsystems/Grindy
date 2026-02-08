@@ -12,10 +12,16 @@ let tray: Tray | null = null
 let isQuitting = false
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
+function getIconPath(): string {
+  if (isDev) {
+    return path.join(process.cwd(), 'assets', 'icon.png')
+  }
+  // In production, assets are in resources/assets (extraResources)
+  return path.join(process.resourcesPath, 'assets', 'icon.png')
+}
+
 function createTray() {
-  const icon = nativeImage.createFromDataURL(
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOklEQVQ4T2NkYGD4z0ABYBzVMKoBBg0wMjAw/IdpwjgwqgEGDTAyMv5nZGT8z8DA8J+BgQE5LAAALpcK0wj+LREAAAAASUVORK5CYII='
-  )
+  const icon = nativeImage.createFromPath(getIconPath())
   tray = new Tray(icon.resize({ width: 16, height: 16 }))
   tray.setToolTip('Grinder')
   tray.on('click', () => {
@@ -28,7 +34,7 @@ function createTray() {
 
 function showNativeNotification(title: string, body: string) {
   if (!Notification.isSupported()) return
-  const n = new Notification({ title, body, icon: undefined })
+  const n = new Notification({ title, body, icon: getIconPath() })
   n.on('click', () => {
     if (mainWindow) {
       mainWindow.show()
@@ -45,6 +51,7 @@ function createWindow() {
     minWidth: 380,
     minHeight: 500,
     maxWidth: 600,
+    icon: getIconPath(),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
