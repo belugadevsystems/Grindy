@@ -1,0 +1,27 @@
+# Сборка установщика и публикация в GitHub Release при пуше тега v* (например v0.1.0, v0.1.1).
+# Как выкатить патч: поднять version в package.json → commit → git tag v0.1.1 → git push origin v0.1.1
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      # electron-builder с publish: github в electron-builder.yml сам создаёт Release и заливает .exe
+      - run: npm run electron:build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

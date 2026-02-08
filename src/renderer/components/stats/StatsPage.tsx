@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionDetail } from './SessionDetail'
-import { OverviewAnalysis } from './OverviewAnalysis'
-import { TrendsChart } from './TrendsChart'
 import { detectPersona, generateInsights } from '../../lib/persona'
 import type { Insight } from '../../lib/persona'
 
@@ -104,12 +102,6 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatNum(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return `${n}`
-}
-
 type TimeFilter = 'today' | 'week' | 'all'
 
 function getFilterMs(filter: TimeFilter): number {
@@ -199,7 +191,6 @@ export function StatsPage() {
   const persona = detectPersona(categoryStats)
   const totalCatMs = categoryStats.reduce((s, c) => s + c.total_ms, 0)
   const avgSessionMin = totalSessions > 0 ? Math.round(totalSeconds / totalSessions / 60) : 0
-  const keysPerMin = totalSeconds > 0 ? Math.round(totalKeystrokes / (totalSeconds / 60)) : 0
 
   // Build deep breakdown: category -> apps -> window titles
   const categoryGroups = categoryStats.map((cat) => {
@@ -274,53 +265,56 @@ export function StatsPage() {
               ))}
             </div>
 
-            {/* Overview cards — 2x2 */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl bg-discord-card border border-white/5 p-2.5 text-center">
-                <p className="text-xl font-mono font-bold text-cyber-neon">{totalSessions}</p>
-                <p className="text-[10px] text-gray-500">grinds</p>
-              </div>
-              <div className="rounded-xl bg-discord-card border border-white/5 p-2.5 text-center">
-                <p className="text-xl font-mono font-bold text-cyber-neon">{formatDuration(totalSeconds)}</p>
-                <p className="text-[10px] text-gray-500">total time</p>
-              </div>
-              <div className="rounded-xl bg-discord-card border border-white/5 p-2.5 text-center">
-                <p className="text-xl font-mono font-bold text-cyber-neon">{avgSessionMin}m</p>
-                <p className="text-[10px] text-gray-500">avg session</p>
-              </div>
-              <div className="rounded-xl bg-discord-card border border-white/5 p-2.5 text-center">
-                <p className="text-xl font-mono font-bold text-cyber-neon">{streak}</p>
-                <p className="text-[10px] text-gray-500">day streak</p>
-              </div>
+            {/* Overview — single block */}
+            <div className="rounded-xl bg-discord-card border border-white/10 p-3">
+              <p className="text-sm text-white font-medium">
+                {totalSessions > 0 ? (
+                  <>
+                    <span className="font-mono text-cyber-neon">{totalSessions}</span> grinds
+                    <span className="text-gray-500 mx-1.5">·</span>
+                    <span className="font-mono text-cyber-neon">{formatDuration(totalSeconds)}</span> total
+                    {streak > 0 && (
+                      <>
+                        <span className="text-gray-500 mx-1.5">·</span>
+                        <span className="font-mono text-cyber-neon">{streak}</span> day streak
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-gray-500">No grinds in this period</span>
+                )}
+              </p>
+              {totalSessions > 0 && (
+                <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                  ~{avgSessionMin} min avg session
+                </p>
+              )}
             </div>
 
-            {/* Keystrokes + Context switches */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl bg-discord-card/80 border border-white/5 p-2.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[10px]">⌨</span>
-                  <span className="text-[10px] text-gray-500 font-mono uppercase">Keystrokes</span>
-                </div>
-                <p className="text-lg font-mono font-bold text-white">{formatNum(totalKeystrokes)}</p>
-                <p className="text-[10px] text-gray-600 font-mono">{keysPerMin}/min</p>
+            {/* Insights */}
+            {insights.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-mono">Insights</p>
+                {insights.map((ins, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
+                      ins.type === 'tip' ? 'border-yellow-500/20 bg-yellow-500/5' :
+                      ins.type === 'praise' ? 'border-cyber-neon/20 bg-cyber-neon/5' :
+                      ins.type === 'warning' ? 'border-discord-red/20 bg-discord-red/5' :
+                      'border-discord-accent/20 bg-discord-accent/5'
+                    }`}
+                  >
+                    <span className="text-sm">{ins.icon}</span>
+                    <span className="text-xs text-gray-300">{ins.text}</span>
+                  </motion.div>
+                ))}
               </div>
-              <div className="rounded-xl bg-discord-card/80 border border-white/5 p-2.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[10px]">🔀</span>
-                  <span className="text-[10px] text-gray-500 font-mono uppercase">Switches</span>
-                </div>
-                <p className="text-lg font-mono font-bold text-white">{contextSwitches}</p>
-                <p className="text-[10px] text-gray-600 font-mono">{totalSeconds > 0 ? (contextSwitches / (totalSeconds / 60)).toFixed(1) : 0}/min</p>
-              </div>
-            </div>
+            )}
 
-            {/* Trends */}
-            {totalSessions > 0 && <TrendsChart />}
-
-            {/* Deep Activity Breakdown */}
+            {/* Apps & windows — where you spent time */}
             {categoryGroups.length > 0 && (
               <div className="rounded-xl bg-discord-card/80 border border-white/10 p-3">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-mono mb-2.5">Activity Breakdown</p>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-mono mb-2.5">Apps & windows</p>
 
                 {/* Timeline bar */}
                 <div className="flex gap-0.5 h-2.5 rounded-full overflow-hidden mb-3">
@@ -414,40 +408,6 @@ export function StatsPage() {
                   <span className="text-[8px] text-gray-600 font-mono">23:00</span>
                 </div>
               </div>
-            )}
-
-            {/* Insights */}
-            {insights.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-mono">Insights</p>
-                {insights.map((ins, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
-                      ins.type === 'tip' ? 'border-yellow-500/20 bg-yellow-500/5' :
-                      ins.type === 'praise' ? 'border-cyber-neon/20 bg-cyber-neon/5' :
-                      ins.type === 'warning' ? 'border-discord-red/20 bg-discord-red/5' :
-                      'border-discord-accent/20 bg-discord-accent/5'
-                    }`}
-                  >
-                    <span className="text-sm">{ins.icon}</span>
-                    <span className="text-xs text-gray-300">{ins.text}</span>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* GRINDALYTICS Overview */}
-            {totalSessions > 0 && (
-              <OverviewAnalysis
-                totalSessions={totalSessions}
-                totalSeconds={totalSeconds}
-                contextSwitches={contextSwitches}
-                totalKeystrokes={totalKeystrokes}
-                appUsage={appUsage}
-                categoryStats={categoryStats}
-                windowTitles={windowStats}
-                periodLabel={filter === 'today' ? 'Today' : filter === 'week' ? 'Last 7 days' : 'All time'}
-              />
             )}
 
             {/* Session history */}
