@@ -263,7 +263,10 @@ function categorize(appName: string, windowTitle: string): ActivityCategory {
   if (/^(spotify|music|soundcloud|itunes|tidal|yandexmusic)$/i.test(lowerApp) || /youtube.*music|spotify|soundcloud/i.test(lowerTitle)) return 'music'
   if (/^(steam|epicgameslauncher|valorant|leagueclient|dota2|minecraft|fortniteclient|gta|csgo|cs2|overwatch|battle\.net|javaw)$/i.test(lowerApp) || /game|play|steam/i.test(lowerTitle)) return 'games'
   if (/^(telegram|discord|slack|whatsapp|teams)$/i.test(lowerApp)) return 'social'
-  if (/^(chrome|firefox|msedge|brave|opera|vivaldi|arc|yandex)$/i.test(lowerApp)) return 'browsing'
+  if (/^(chrome|firefox|msedge|brave|opera|vivaldi|arc|yandex)$/i.test(lowerApp)) {
+    if (/youtube\s*music|music\.youtube|яндекс\s*музык|music\.yandex|yandex\s*music/i.test(lowerTitle)) return 'music'
+    return 'browsing'
+  }
   return 'other'
 }
 
