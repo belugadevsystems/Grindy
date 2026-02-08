@@ -55,12 +55,12 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full mb-3 rounded-xl bg-discord-card border border-white/10 p-4 w-72 z-10"
+            className="absolute bottom-full mb-3 rounded-2xl p-4 w-72 z-10 shadow-xl border border-amber-500/25 bg-gradient-to-b from-[#2a2520] to-[#1e1e2e]"
           >
-            <p className="text-sm text-white font-semibold text-center mb-1">
+            <p className="text-sm font-semibold text-center mb-1 text-amber-200">
               {confirmState === 'discard' ? 'Session under 30s' : 'Stop grinding?'}
             </p>
-            <p className="text-xs text-gray-400 text-center mb-3">
+            <p className="text-xs text-gray-400 text-center mb-4">
               {confirmState === 'discard'
                 ? 'This session is too short to save. Discard it?'
                 : 'End this grind session and save progress?'}
@@ -68,13 +68,13 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
             <div className="flex gap-2">
               <button
                 onClick={handleCancel}
-                className="flex-1 py-2 rounded-lg bg-discord-darker border border-white/10 text-sm text-gray-400 font-medium hover:bg-discord-darker/80 transition-colors active:scale-95"
+                className="flex-1 py-2.5 rounded-xl border-2 border-white/20 bg-white/5 text-sm text-white font-medium hover:bg-white/10 hover:border-white/30 transition-all active:scale-95"
               >
                 Continue
               </button>
               <button
                 onClick={handleConfirmStop}
-                className="flex-1 py-2 rounded-lg bg-discord-red text-white text-sm font-bold hover:bg-red-600 transition-colors active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-discord-red text-white text-sm font-bold hover:bg-red-500 shadow-[0_0_16px_rgba(237,66,69,0.4)] transition-all active:scale-95"
               >
                 I'm done
               </button>
@@ -103,7 +103,7 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
         {isActive && (
           <button
             onClick={handlePauseResume}
-            className="py-3 px-5 rounded-2xl font-bold text-sm bg-discord-card text-white border border-white/10 hover:bg-discord-cardHover active:scale-95 whitespace-nowrap transition-colors duration-150"
+            className="py-3 px-5 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-150 active:scale-95 border-2 border-[#5865F2]/50 bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/25 hover:border-[#5865F2]/70 hover:shadow-[0_0_20px_rgba(88,101,242,0.2)]"
           >
             {isPaused ? 'RESUME' : 'PAUSE'}
           </button>

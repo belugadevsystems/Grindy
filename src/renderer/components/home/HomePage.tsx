@@ -53,7 +53,7 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
     <div className="flex flex-col h-full">
       <ProfileBar onNavigateProfile={onNavigateProfile} />
 
-      <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-4 px-4 gap-6">
+      <div className="flex-1 flex flex-col items-center justify-start pt-4 pb-4 px-4 gap-8">
         {/* Top: mascot + banner */}
         <div className="flex flex-col items-center w-full px-2">
           {showWelcome && status === 'idle' ? (
@@ -76,8 +76,8 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
           <Timer />
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-col items-center">
+        {/* Controls + activity / Browser Mode */}
+        <div className="flex flex-col items-center gap-5">
           <SessionControls glowPulse={showWelcome && status === 'idle'} />
           <AnimatePresence>
             {status !== 'idle' && (
@@ -103,8 +103,8 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
           </AnimatePresence>
         </div>
 
-        {/* Goal — same gap as other blocks */}
-        <div className="flex flex-col items-center w-full max-w-xs">
+        {/* Goal */}
+        <div className="flex flex-col items-center w-full max-w-xs mt-1">
           <GoalWidget />
         </div>
       </div>

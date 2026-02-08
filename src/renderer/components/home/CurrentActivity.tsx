@@ -7,12 +7,12 @@ export function CurrentActivity() {
 
   if (isBrowser) {
     return (
-      <div className="w-full max-w-xs rounded-xl bg-discord-card/60 border border-white/5 px-4 py-3">
+      <div className="w-full max-w-xs rounded-xl px-4 py-3 border border-sky-400/25 bg-gradient-to-r from-sky-950/40 to-sky-900/20 shadow-[0_0_20px_rgba(56,189,248,0.08)]">
         <div className="flex items-center gap-2.5">
-          <span className="text-lg">🌐</span>
+          <span className="text-xl">🌐</span>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium">Browser Mode</p>
-            <p className="text-gray-500 text-xs">window detection works in desktop app</p>
+            <p className="text-sky-200 text-sm font-medium">Browser Mode</p>
+            <p className="text-sky-400/70 text-xs">window detection works in desktop app</p>
           </div>
         </div>
       </div>
@@ -35,12 +35,12 @@ export function CurrentActivity() {
     : ''
 
   return (
-    <div className="w-full max-w-xs rounded-xl bg-discord-card border border-white/5 px-4 py-3">
+    <div className="w-full max-w-xs rounded-xl bg-discord-card/90 border border-cyber-neon/20 px-4 py-3 shadow-[0_0_16px_rgba(0,255,136,0.06)]">
       <div className="flex items-center gap-2.5">
         <span className="text-lg">{skill?.icon ?? '📱'}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-medium truncate">Leveling {skillLabel}</p>
-          <p className="text-gray-500 text-xs truncate">{currentActivity.appName}{title ? ` · ${title}` : ''}</p>
+          <p className="text-cyber-neon/95 text-sm font-medium truncate">Leveling {skillLabel}</p>
+          <p className="text-gray-400 text-xs truncate">{currentActivity.appName}{title ? ` · ${title}` : ''}</p>
         </div>
       </div>
     </div>

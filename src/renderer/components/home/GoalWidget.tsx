@@ -40,6 +40,23 @@ const CATEGORIES = [
   { value: 'browsing', label: '🌐 Browsing' },
 ]
 
+const TASKS_STORAGE_KEY = 'grinder_tasks'
+
+function getTasksFromStorage(): Task[] {
+  try {
+    const raw = localStorage.getItem(TASKS_STORAGE_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw) as Task[]
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+function setTasksInStorage(tasks: Task[]): void {
+  localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
+}
+
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -77,11 +94,14 @@ export function GoalWidget() {
 
   const loadTasks = useCallback(async () => {
     const api = window.electronAPI
-    if (!api?.db?.getTasks) return
-    try {
-      const t = await api.db.getTasks()
-      setTasks(t)
-    } catch (e) { console.error('loadTasks failed', e) }
+    if (api?.db?.getTasks) {
+      try {
+        const t = await api.db.getTasks()
+        setTasks(t)
+      } catch (e) { console.error('loadTasks failed', e) }
+      return
+    }
+    setTasks(getTasksFromStorage())
   }, [])
 
   const loadAll = useCallback(() => { loadGoals(); loadTasks() }, [loadGoals, loadTasks])
@@ -120,29 +140,47 @@ export function GoalWidget() {
 
   const handleToggleTask = useCallback(async (id: string) => {
     const api = window.electronAPI
-    if (!api?.db?.toggleTask) return
-    await api.db.toggleTask(id)
+    if (api?.db?.toggleTask) {
+      await api.db.toggleTask(id)
+    } else {
+      const list = getTasksFromStorage()
+      const idx = list.findIndex((t) => t.id === id)
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], done: list[idx].done ? 0 : 1 }
+        setTasksInStorage(list)
+      }
+    }
     loadTasks()
   }, [loadTasks])
 
   const handleUpdateTaskText = useCallback(async (id: string, text: string) => {
     const api = window.electronAPI
-    if (!api?.db?.updateTaskText) return
-    await api.db.updateTaskText(id, text)
+    if (api?.db?.updateTaskText) {
+      await api.db.updateTaskText(id, text)
+    } else {
+      const list = getTasksFromStorage().map((t) => t.id === id ? { ...t, text } : t)
+      setTasksInStorage(list)
+    }
     loadTasks()
   }, [loadTasks])
 
   const handleDeleteTask = useCallback(async (id: string) => {
     const api = window.electronAPI
-    if (!api?.db?.deleteTask) return
-    await api.db.deleteTask(id)
+    if (api?.db?.deleteTask) {
+      await api.db.deleteTask(id)
+    } else {
+      setTasksInStorage(getTasksFromStorage().filter((t) => t.id !== id))
+    }
     loadTasks()
   }, [loadTasks])
 
   const handleClearDone = useCallback(async () => {
     const api = window.electronAPI
-    if (!api?.db?.clearDoneTasks) return
-    await api.db.clearDoneTasks()
+    if (api?.db?.clearDoneTasks) {
+      await api.db.clearDoneTasks()
+    } else {
+      setTasksInStorage(getTasksFromStorage().filter((t) => t.done === 0))
+    }
     loadTasks()
   }, [loadTasks])
 
@@ -247,7 +285,7 @@ export function GoalWidget() {
       {view === 'list' && (
         <button
           onClick={() => setView('add-pick')}
-          className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors font-mono py-2 rounded-lg hover:bg-white/[0.03] active:scale-[0.98]"
+          className="w-full text-center text-xs text-gray-500 hover:text-cyber-neon/90 transition-colors font-mono py-2 rounded-lg hover:bg-cyber-neon/[0.06] active:scale-[0.98] border border-transparent hover:border-cyber-neon/20"
         >
           {isEmpty ? '+ set a goal' : '+ add goal'}
         </button>
@@ -364,12 +402,19 @@ function TaskCreator({ onCreated, onCancel }: { onCreated: () => void; onCancel:
     const trimmed = text.trim()
     if (!trimmed) return
     const api = window.electronAPI
-    if (!api?.db?.createTask) return
-    try {
-      await api.db.createTask({ id: crypto.randomUUID(), text: trimmed })
-      setText('')
-      onCreated()
-    } catch (e) { console.error('createTask failed', e) }
+    if (api?.db?.createTask) {
+      try {
+        await api.db.createTask({ id: crypto.randomUUID(), text: trimmed })
+        setText('')
+        onCreated()
+      } catch (e) { console.error('createTask failed', e) }
+      return
+    }
+    const list = getTasksFromStorage()
+    const newTask: Task = { id: crypto.randomUUID(), text: trimmed, done: 0, created_at: Date.now() }
+    setTasksInStorage([...list, newTask])
+    setText('')
+    onCreated()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

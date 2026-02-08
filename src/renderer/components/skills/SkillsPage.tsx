@@ -43,6 +43,11 @@ export function SkillsPage() {
   const byId = new Map(skillData.map((r) => [r.skill_id, r.total_xp]))
   const totalLevel = SKILLS.reduce((sum, s) => sum + skillLevelFromXP(byId.get(s.id) ?? 0), 0)
 
+  // Качаемый скилл — наверх, остальные ниже
+  const levelingFirst = levelingSkillId
+    ? [...SKILLS.filter((s) => s.id === levelingSkillId), ...SKILLS.filter((s) => s.id !== levelingSkillId)]
+    : SKILLS
+
   if (loading) {
     return (
       <div className="p-4 flex items-center justify-center min-h-[200px]">
@@ -74,9 +79,127 @@ export function SkillsPage() {
         </div>
       </div>
 
-      {/* Skill cards — single column for clarity */}
+      {/* Leveling skill — on top when active */}
+      {levelingSkillId && (() => {
+        const skill = SKILLS.find((s) => s.id === levelingSkillId)
+        if (!skill) return null
+        const xp = byId.get(skill.id) ?? 0
+        const level = skillLevelFromXP(xp)
+        const { current, needed } = skillXPProgress(xp)
+        const pct = needed > 0 ? Math.min(100, (current / needed) * 100) : 100
+        const timeStr = formatSkillTime(xp)
+        const isExpanded = expandedId === skill.id
+        return (
+          <div className="mb-4">
+            <motion.div
+              key={skill.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              layout
+            >
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : skill.id)}
+                className="w-full rounded-xl border transition-all duration-200 text-left relative overflow-hidden group bg-discord-card border-cyber-neon/40 shadow-[0_0_20px_rgba(0,255,136,0.08)]"
+              >
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+                  style={{ backgroundColor: skill.color, opacity: level > 1 ? 0.8 : 0.2 }}
+                />
+                <div className="pl-4 pr-3 py-3 flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-lg"
+                    style={{ backgroundColor: `${skill.color}15`, border: `1px solid ${skill.color}30` }}
+                  >
+                    {skill.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[13px] font-semibold text-white truncate">{skill.name}</span>
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0"
+                        style={{ backgroundColor: `${skill.color}25`, color: skill.color, border: `1px solid ${skill.color}40` }}
+                      >
+                        active
+                      </motion.span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: skill.color }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-gray-500 font-mono">{formatXP(current)} / {formatXP(needed)} XP</span>
+                      <span className="text-[10px] text-gray-600 font-mono">{timeStr} played</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-center ml-1">
+                    <div
+                      className="w-11 h-11 rounded-lg flex flex-col items-center justify-center"
+                      style={{ backgroundColor: `${skill.color}10`, border: `1px solid ${skill.color}20` }}
+                    >
+                      <span className="text-[10px] text-gray-500 font-mono leading-none">LV</span>
+                      <span className="text-base font-mono font-bold leading-tight" style={{ color: skill.color }}>{level}</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mx-1 px-3 py-2.5 rounded-b-xl bg-discord-card/50 border border-t-0 border-white/[0.04] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Next level</span>
+                        <span className="text-[11px] font-mono text-white">Lv.{level + 1}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">XP remaining</span>
+                        <span className="text-[11px] font-mono" style={{ color: skill.color }}>{formatXP(needed - current)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Time to next</span>
+                        <span className="text-[11px] font-mono text-gray-300">~{Math.ceil((needed - current) / 3600)}h</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Total XP</span>
+                        <span className="text-[11px] font-mono text-gray-300">{formatXP(xp)}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </div>
+        )
+      })()}
+
+      {/* Separator when leveling */}
+      {levelingSkillId && (
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Other skills</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+      )}
+
+      {/* Rest of skills */}
       <div className="space-y-2.5">
-        {SKILLS.map((skill, i) => {
+        {levelingFirst
+          .filter((s) => s.id !== levelingSkillId)
+          .map((skill, i) => {
           const xp = byId.get(skill.id) ?? 0
           const level = skillLevelFromXP(xp)
           const { current, needed } = skillXPProgress(xp)
@@ -90,7 +213,7 @@ export function SkillsPage() {
               key={skill.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: Math.min(i * 0.04, 0.2), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               layout
             >
               <button
