@@ -92,9 +92,15 @@ while ($true) {
         if ($pid2 -gt 0) {
             $pname = $null
             try {
-                $cim = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
-                if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
+                $byWindow = Get-Process | Where-Object { $_.MainWindowHandle -eq $hwnd } | Select-Object -First 1
+                if ($byWindow -and $byWindow.ProcessName) { $pname = $byWindow.ProcessName }
             } catch { }
+            if (-not $pname) {
+                try {
+                    $cim = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
+                    if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
+                } catch { }
+            }
             if (-not $pname) {
                 try {
                     $wmi = Get-WmiObject Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
