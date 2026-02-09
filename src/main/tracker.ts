@@ -91,24 +91,28 @@ while ($true) {
         [void][WinApi]::GetWindowThreadProcessId($hwnd, [ref]$pid2)
         if ($pid2 -gt 0) {
             $pname = $null
-            $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
-            if ($proc) { $pname = $proc.ProcessName }
+            try {
+                $cim = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
+                if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
+            } catch { }
             if (-not $pname) {
-                try {
-                    $cim = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
-                    if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
-                } catch { }
+                $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
+                if ($proc) { $pname = $proc.ProcessName }
             }
+            $rawTitle = [WinApi]::GetTitle($hwnd)
+            $title = ($rawTitle -replace '[\r\n]+', ' ' -replace '\|', '&#124;').Trim()
             if ($pname -eq 'explorer') {
                 [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } elseif ($pname) {
-                $rawTitle = [WinApi]::GetTitle($hwnd)
-                $title = ($rawTitle -replace '[\r\n]+', ' ' -replace '\|', '&#124;').Trim()
                 [Console]::Out.WriteLine("WIN:" + $pname + "|" + $title + "|" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } else {
-                [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
+                if ($title) {
+                    [Console]::Out.WriteLine("WIN:Unknown|" + $title + "|" + $keys + "|" + $idleMs)
+                } else {
+                    [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
+                }
                 [Console]::Out.Flush()
             }
         } else {
@@ -389,6 +393,16 @@ const LEARNING_TITLE = /подкаст|podcast|лекци|lecture|курс|cours
 function categorizeMultiple(appName: string, windowTitle: string): ActivityCategory[] {
   const lowerApp = appName.toLowerCase().replace(/\.(exe|app)$/i, '')
   const lowerTitle = windowTitle.toLowerCase()
+  // When process name is unknown (e.g. protected), infer from window title
+  if (lowerApp === 'unknown' && lowerTitle) {
+    if (/cursor|visual studio|\.tsx?|\.jsx?|\.py\b|\.rs\b|\.go\b|code\s*\-/i.test(lowerTitle)) return ['coding']
+    if (/chrome|firefox|edge|brave|opera|browser/i.test(lowerTitle)) return ['browsing']
+    if (MUSIC_TITLE.test(lowerTitle)) return ['music']
+    if (LEARNING_TITLE.test(lowerTitle)) return ['learning']
+    if (/figma|design|mockup/i.test(lowerTitle)) return ['design']
+    if (/telegram|discord|slack|whatsapp|teams/i.test(lowerTitle)) return ['social']
+    if (/steam|game|play/i.test(lowerTitle)) return ['games']
+  }
   if (/^(code|cursor|intellij|webstorm|pycharm|idea|devenv|rider)$/i.test(lowerApp) || /visual studio/i.test(lowerApp)) return ['coding']
   if (/\.(tsx?|jsx?|py|rs|go|cpp|cs|java)\b/i.test(lowerTitle)) return ['coding']
   if (/^(figma|photoshop|sketch|canva|illustrator|xd|invision|zeplin|affinity|gimp|krita)$/i.test(lowerApp) || /figma|design|mockup/i.test(lowerTitle)) return ['design']
@@ -413,6 +427,7 @@ function categorizeMultiple(appName: string, windowTitle: string): ActivityCateg
 
 function getAppDisplayName(appName: string): string {
   if (appName === 'Idly.TrackerError') return 'Ошибка детектора окна'
+  if (appName === 'Unknown') return 'Окно'
   const base = appName.replace(/\.(exe|app)$/i, '').replace(/\s+/g, '')
   const baseLower = base.toLowerCase()
   if (baseLower === 'electron' || baseLower === 'idly') return 'Idly'
