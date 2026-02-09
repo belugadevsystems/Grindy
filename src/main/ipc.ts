@@ -19,6 +19,7 @@ import {
   localStatKey,
   localStatValue,
 } from './validation'
+import { IPC_CHANNELS } from '../shared/ipcChannels'
 
 let notificationSender: ((title: string, body: string) => void) | null = null
 export function setNotificationSender(fn: (title: string, body: string) => void) {
@@ -33,148 +34,152 @@ export function registerIpcHandlers() {
   const tracker = getTrackerApi()
   const db = getDatabaseApi()
 
-  ipcMain.handle('tracker:start', () => tracker.start())
-  ipcMain.handle('tracker:stop', () => tracker.stop())
-  ipcMain.handle('tracker:pause', () => tracker.pause())
-  ipcMain.handle('tracker:resume', () => tracker.resume())
-  ipcMain.handle('tracker:getCurrentActivity', () => tracker.getCurrentActivity())
-  ipcMain.handle('tracker:setAfkThreshold', (_, ms: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.tracker.start, () => tracker.start())
+  ipcMain.handle(IPC_CHANNELS.tracker.stop, () => tracker.stop())
+  ipcMain.handle(IPC_CHANNELS.tracker.pause, () => tracker.pause())
+  ipcMain.handle(IPC_CHANNELS.tracker.resume, () => tracker.resume())
+  ipcMain.handle(IPC_CHANNELS.tracker.getCurrentActivity, () => tracker.getCurrentActivity())
+  ipcMain.handle(IPC_CHANNELS.tracker.setAfkThreshold, (_, ms: unknown) => {
     const parsed = nonNegativeInt.parse(ms)
     tracker.setAfkThreshold(parsed)
   })
   tracker.onActivityUpdate((activity) => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('tracker:activityUpdate', activity)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_CHANNELS.tracker.activityUpdate, activity)
+    }
   })
   tracker.onIdleChange((idle) => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('tracker:idleChange', idle)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_CHANNELS.tracker.idleChange, idle)
+    }
   })
 
-  ipcMain.handle('db:getSessions', (_, limit?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getSessions, (_, limit?: unknown) => {
     const parsed = optionalLimit.parse(limit)
     return db.getSessions(parsed)
   })
-  ipcMain.handle('db:getSessionById', (_, id: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getSessionById, (_, id: unknown) => {
     return db.getSessionById(stringId.parse(id))
   })
-  ipcMain.handle('db:getActivitiesBySessionId', (_, sessionId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getActivitiesBySessionId, (_, sessionId: unknown) => {
     return db.getActivitiesBySessionId(stringId.parse(sessionId))
   })
-  ipcMain.handle('db:saveSession', (_, session: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.saveSession, (_, session: unknown) => {
     const parsed = saveSessionSchema.parse(session)
     return db.saveSession(parsed)
   })
-  ipcMain.handle('db:saveActivities', (_, sessionId: unknown, activities: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.saveActivities, (_, sessionId: unknown, activities: unknown) => {
     const parsed = saveActivitiesSchema.parse({ sessionId, activities })
     return db.saveActivities(parsed.sessionId, parsed.activities)
   })
-  ipcMain.handle('db:getStreak', () => db.getStreak())
-  ipcMain.handle('db:getUserStats', () => db.getUserStats())
-  ipcMain.handle('db:getSessionAnalysis', (_, sessionId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getStreak, () => db.getStreak())
+  ipcMain.handle(IPC_CHANNELS.db.getUserStats, () => db.getUserStats())
+  ipcMain.handle(IPC_CHANNELS.db.getSessionAnalysis, (_, sessionId: unknown) => {
     return db.getSessionAnalysis(stringId.parse(sessionId))
   })
-  ipcMain.handle('db:getLocalStat', (_, key: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getLocalStat, (_, key: unknown) => {
     return db.getLocalStat(localStatKey.parse(key))
   })
-  ipcMain.handle('db:setLocalStat', (_, key: unknown, value: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.setLocalStat, (_, key: unknown, value: unknown) => {
     return db.setLocalStat(localStatKey.parse(key), localStatValue.parse(value))
   })
-  ipcMain.handle('db:getUnlockedAchievements', () => db.getUnlockedAchievements())
-  ipcMain.handle('db:unlockAchievement', (_, achievementId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getUnlockedAchievements, () => db.getUnlockedAchievements())
+  ipcMain.handle(IPC_CHANNELS.db.unlockAchievement, (_, achievementId: unknown) => {
     return db.unlockAchievement(stringId.parse(achievementId))
   })
-  ipcMain.handle('db:getAppUsageStats', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getAppUsageStats, (_, sinceMs?: unknown) => {
     return db.getAppUsageStats(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getCategoryStats', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getCategoryStats, (_, sinceMs?: unknown) => {
     return db.getCategoryStats(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getContextSwitchCount', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getContextSwitchCount, (_, sinceMs?: unknown) => {
     return db.getContextSwitchCount(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getSessionCount', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getSessionCount, (_, sinceMs?: unknown) => {
     return db.getSessionCount(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getTotalSeconds', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getTotalSeconds, (_, sinceMs?: unknown) => {
     return db.getTotalSeconds(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getWindowTitleStats', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getWindowTitleStats, (_, sinceMs?: unknown) => {
     return db.getWindowTitleStats(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getHourlyDistribution', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getHourlyDistribution, (_, sinceMs?: unknown) => {
     return db.getHourlyDistribution(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getTotalKeystrokes', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getTotalKeystrokes, (_, sinceMs?: unknown) => {
     return db.getTotalKeystrokes(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getKeystrokesByApp', (_, sinceMs?: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getKeystrokesByApp, (_, sinceMs?: unknown) => {
     return db.getKeystrokesByApp(optionalSinceMs.parse(sinceMs))
   })
-  ipcMain.handle('db:getSkillXP', (_, skillId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getSkillXP, (_, skillId: unknown) => {
     return db.getSkillXP(stringId.parse(skillId))
   })
-  ipcMain.handle('db:addSkillXP', (_, skillId: unknown, amount: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.addSkillXP, (_, skillId: unknown, amount: unknown) => {
     return db.addSkillXP(stringId.parse(skillId), nonNegativeInt.parse(amount))
   })
-  ipcMain.handle('db:getAllSkillXP', () => db.getAllSkillXP())
+  ipcMain.handle(IPC_CHANNELS.db.getAllSkillXP, () => db.getAllSkillXP())
 
   // Goals
-  ipcMain.handle('db:getActiveGoals', () => db.getActiveGoals())
-  ipcMain.handle('db:getAllGoals', () => db.getAllGoals())
-  ipcMain.handle('db:createGoal', (_, goal: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getActiveGoals, () => db.getActiveGoals())
+  ipcMain.handle(IPC_CHANNELS.db.getAllGoals, () => db.getAllGoals())
+  ipcMain.handle(IPC_CHANNELS.db.createGoal, (_, goal: unknown) => {
     return db.createGoal(goalSchema.parse(goal))
   })
-  ipcMain.handle('db:completeGoal', (_, id: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.completeGoal, (_, id: unknown) => {
     return db.completeGoal(stringId.parse(id))
   })
-  ipcMain.handle('db:updateGoal', (_, goal: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.updateGoal, (_, goal: unknown) => {
     return db.updateGoal(updateGoalSchema.parse(goal))
   })
-  ipcMain.handle('db:deleteGoal', (_, id: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.deleteGoal, (_, id: unknown) => {
     return db.deleteGoal(stringId.parse(id))
   })
-  ipcMain.handle('db:getGoalProgress', (_, goal: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getGoalProgress, (_, goal: unknown) => {
     return db.getGoalProgress(goalProgressSchema.parse(goal))
   })
 
   // Grind Tasks
-  ipcMain.handle('db:getTasks', () => db.getTasks())
-  ipcMain.handle('db:createTask', (_, task: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getTasks, () => db.getTasks())
+  ipcMain.handle(IPC_CHANNELS.db.createTask, (_, task: unknown) => {
     const parsed = task as { id: string; text: string }
     if (!parsed.id || !parsed.text) throw new Error('Invalid task')
     return db.createTask(parsed)
   })
-  ipcMain.handle('db:toggleTask', (_, id: unknown) => db.toggleTask(stringId.parse(id)))
-  ipcMain.handle('db:updateTaskText', (_, id: unknown, text: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.toggleTask, (_, id: unknown) => db.toggleTask(stringId.parse(id)))
+  ipcMain.handle(IPC_CHANNELS.db.updateTaskText, (_, id: unknown, text: unknown) => {
     const parsedId = stringId.parse(id)
     if (typeof text !== 'string' || !text.trim()) throw new Error('Invalid text')
     return db.updateTaskText(parsedId, (text as string).trim())
   })
-  ipcMain.handle('db:deleteTask', (_, id: unknown) => db.deleteTask(stringId.parse(id)))
-  ipcMain.handle('db:clearDoneTasks', () => db.clearDoneTasks())
+  ipcMain.handle(IPC_CHANNELS.db.deleteTask, (_, id: unknown) => db.deleteTask(stringId.parse(id)))
+  ipcMain.handle(IPC_CHANNELS.db.clearDoneTasks, () => db.clearDoneTasks())
 
   // Trends
-  ipcMain.handle('db:getDailyTotals', (_, days: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getDailyTotals, (_, days: unknown) => {
     return db.getDailyTotals(positiveInt.parse(days))
   })
 
   // Skill XP Log
-  ipcMain.handle('db:addSkillXPLog', (_, skillId: unknown, xpDelta: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.addSkillXPLog, (_, skillId: unknown, xpDelta: unknown) => {
     return db.addSkillXPLog(stringId.parse(skillId), nonNegativeInt.parse(xpDelta))
   })
-  ipcMain.handle('db:getSkillXPHistory', (_, skillId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.getSkillXPHistory, (_, skillId: unknown) => {
     return db.getSkillXPHistory(stringId.parse(skillId))
   })
 
   // Session Checkpoint (crash recovery)
-  ipcMain.handle('db:saveCheckpoint', (_, data: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.db.saveCheckpoint, (_, data: unknown) => {
     const parsed = data as { sessionId: string; startTime: number; elapsedSeconds: number; pausedAccumulated: number }
     if (!parsed || typeof parsed.sessionId !== 'string') throw new Error('Invalid checkpoint data')
     return db.saveCheckpoint(parsed)
   })
-  ipcMain.handle('db:getCheckpoint', () => db.getCheckpoint())
-  ipcMain.handle('db:clearCheckpoint', () => db.clearCheckpoint())
+  ipcMain.handle(IPC_CHANNELS.db.getCheckpoint, () => db.getCheckpoint())
+  ipcMain.handle(IPC_CHANNELS.db.clearCheckpoint, () => db.clearCheckpoint())
 
-  ipcMain.handle('ai:analyzeSession', async (_, sessionId: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.ai.analyzeSession, async (_, sessionId: unknown) => {
     const id = stringId.parse(sessionId)
     const session = db.getSessionById(id)
     if (!session) throw new Error('Session not found')
@@ -195,7 +200,7 @@ export function registerIpcHandlers() {
     return text
   })
 
-  ipcMain.handle('ai:analyzeOverview', async (_, overviewData: OverviewData) => {
+  ipcMain.handle(IPC_CHANNELS.ai.analyzeOverview, async (_, overviewData: OverviewData) => {
     // Rate limiting: prevent rapid repeated calls
     const now = Date.now()
     if (now - lastOverviewCallMs < OVERVIEW_COOLDOWN_MS) {
@@ -209,23 +214,23 @@ export function registerIpcHandlers() {
   })
 
   // ── Auto-launch ──
-  ipcMain.handle('settings:getAutoLaunch', () => {
+  ipcMain.handle(IPC_CHANNELS.settings.getAutoLaunch, () => {
     return app.getLoginItemSettings().openAtLogin
   })
-  ipcMain.handle('settings:setAutoLaunch', (_, enabled: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.settings.setAutoLaunch, (_, enabled: unknown) => {
     if (typeof enabled !== 'boolean') throw new Error('enabled must be boolean')
     app.setLoginItemSettings({ openAtLogin: enabled })
   })
 
   // ── Native notifications ──
-  ipcMain.handle('notify:show', (_, title: unknown, body: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.notify.show, (_, title: unknown, body: unknown) => {
     if (typeof title !== 'string' || typeof body !== 'string') throw new Error('title and body must be strings')
     if (title.length > 256 || body.length > 1024) throw new Error('title/body too long')
     if (notificationSender) notificationSender(title, body)
   })
 
   // ── Data export ──
-  ipcMain.handle('data:exportSessions', async (_, format: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.data.exportSessions, async (_, format: unknown) => {
     if (format !== 'csv' && format !== 'json') throw new Error('format must be csv or json')
 
     const sessions = db.getSessions(9999)
@@ -287,7 +292,7 @@ export function registerIpcHandlers() {
   })
 
   // ── Auto-updater: restart to apply update ────────────────────────────────
-  ipcMain.handle('updater:install', () => {
+  ipcMain.handle(IPC_CHANNELS.updater.install, () => {
     const { autoUpdater } = require('electron-updater')
     autoUpdater.quitAndInstall(false, true)
   })
