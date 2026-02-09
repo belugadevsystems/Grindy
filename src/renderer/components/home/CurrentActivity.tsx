@@ -21,7 +21,18 @@ export function CurrentActivity() {
     )
   }
 
+  const isDetectorError = currentActivity?.appName === 'Ошибка детектора окна'
   const isUnknown = !currentActivity || currentActivity.appName === 'Unknown' || currentActivity.windowTitle === 'Detecting...'
+
+  if (isDetectorError && currentActivity) {
+    return (
+      <div className="w-full max-w-xs rounded-xl bg-amber-950/30 border border-amber-500/30 px-4 py-3">
+        <p className="text-amber-400 text-sm font-medium">Ошибка детектора окна</p>
+        <p className="text-gray-400 text-xs mt-1 break-words">{currentActivity.windowTitle}</p>
+        <p className="text-gray-500 text-[11px] mt-2">Проверьте логи в папке приложения или запустите приложение от имени администратора.</p>
+      </div>
+    )
+  }
 
   if (!currentActivity || isUnknown) {
     return (

@@ -26,7 +26,8 @@ let detectorRestartCount = 0
  */
 const DETECTOR_SCRIPT = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Add-Type @"
+try {
+  Add-Type -TypeDefinition @"
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -74,6 +75,13 @@ public class WinApi {
     }
 }
 "@
+  [Console]::Out.WriteLine("READY")
+  [Console]::Out.Flush()
+} catch {
+  [Console]::Out.WriteLine("ERR:AddType-" + ($_.Exception.Message -replace '[|\r\n]', ' '))
+  [Console]::Out.Flush()
+  exit 1
+}
 while ($true) {
     try {
         $keys = [WinApi]::CountKeyPresses()
@@ -95,7 +103,8 @@ while ($true) {
                 [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } elseif ($pname) {
-                $title = ([WinApi]::GetTitle($hwnd)) -replace '\|', '&#124;'
+                $rawTitle = [WinApi]::GetTitle($hwnd)
+                $title = ($rawTitle -replace '[\r\n]+', ' ' -replace '\|', '&#124;').Trim()
                 [Console]::Out.WriteLine("WIN:" + $pname + "|" + $title + "|" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } else {
@@ -118,11 +127,17 @@ let hasReceivedWinLine = false
 
 function parseLine(line: string): void {
   const trimmed = line.trim()
-  if (!trimmed.startsWith('WIN:')) return
-  if (!hasReceivedWinLine) {
-    hasReceivedWinLine = true
-    log.info('[tracker] First window data received')
+  if (trimmed === 'READY') {
+    log.info('[tracker] Detector script ready (Add-Type succeeded)')
+    return
   }
+  if (trimmed.startsWith('ERR:')) {
+    const msg = trimmed.slice(4).trim()
+    log.error('[tracker] Detector script error:', msg)
+    latestWinInfo = { appName: 'Idly.TrackerError', title: msg, keys: 0, idleMs: 0 }
+    return
+  }
+  if (!trimmed.startsWith('WIN:')) return
   const payload = trimmed.slice(4)
   const parts = payload.split('|')
   if (parts.length < 4) return
@@ -131,6 +146,10 @@ function parseLine(line: string): void {
   const idleMs = parseInt(parts[parts.length - 1], 10) || 0
   const title = parts.slice(1, -2).join('|').replace(/&#124;/g, '|').trim()
   latestWinInfo = { appName, title, keys, idleMs }
+  if (!hasReceivedWinLine) {
+    hasReceivedWinLine = true
+    log.info('[tracker] First window data received', { appName, title: title.slice(0, 50) })
+  }
 }
 
 let detectorScriptPath: string | null = null
@@ -153,9 +172,15 @@ function startWindowDetector(): void {
     return
   }
 
+  // Prefer Windows PowerShell 5 (user32.dll works); avoid PowerShell Core (pwsh) which may differ
   const psExe = getPowerShellPath()
-  const args = ['-NoProfile', '-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', detectorScriptPath]
-  const spawnOpts: SpawnOptions = { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, cwd: scriptDir, env: process.env }
+  const args = ['-NoProfile', '-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Scope', 'Process', '-File', detectorScriptPath]
+  const spawnOpts: SpawnOptions = {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+    cwd: scriptDir,
+    env: process.env,
+  }
 
   function trySpawn(executable: string): ChildProcess | null {
     try {
@@ -214,6 +239,8 @@ function startWindowDetector(): void {
       detectorScriptPath = null
     }
   })
+
+  log.info('[tracker] Detector process started', { pid: detectorProcess.pid, scriptPath: detectorScriptPath })
 
   if (detectorRestartTimeout) {
     clearTimeout(detectorRestartTimeout)
@@ -327,6 +354,10 @@ function categorizeMultiple(appName: string, windowTitle: string): ActivityCateg
 }
 
 function getAppDisplayName(appName: string): string {
+  if (appName === 'Idly.TrackerError') return 'Ошибка детектора окна'
+  const base = appName.replace(/\.(exe|app)$/i, '').replace(/\s+/g, '')
+  const baseLower = base.toLowerCase()
+  if (baseLower === 'electron' || baseLower === 'idly') return 'Idly'
   const map: Record<string, string> = {
     code: 'VS Code',
     cursor: 'Cursor',
@@ -366,8 +397,7 @@ function getAppDisplayName(appName: string): string {
     arc: 'Arc',
     yandex: 'Yandex Browser',
   }
-  const base = appName.replace(/\.(exe|app)$/i, '').replace(/\s+/g, '')
-  if (map[base.toLowerCase()]) return map[base.toLowerCase()]
+  if (map[baseLower]) return map[baseLower]
   if (/applicationframehost|microsoftedge|msedge/i.test(base)) return 'Microsoft Edge'
   if (/chrome/i.test(base)) return 'Google Chrome'
   return appName.replace(/\.(exe|app)$/i, '')
@@ -441,7 +471,8 @@ export function getTrackerApi() {
       detectorRestartCount = 0
       startWindowDetector()
       pollInterval = setInterval(poll, POLL_INTERVAL_MS)
-      setTimeout(poll, 2500)
+      poll() // run immediately so we show "Detecting..." then update when first WIN line arrives
+      setTimeout(poll, 800) // and again after detector had time to output (script loop is 1.5s)
     },
     stop(): ActivitySegment[] {
       if (pollInterval) {

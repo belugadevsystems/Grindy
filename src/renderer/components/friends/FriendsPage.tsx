@@ -38,7 +38,7 @@ export function FriendsPage() {
       ) : view === 'chat' && selected ? (
         <ChatThread
           profile={selected}
-          onBack={() => { setView('profile') }}
+          onBack={() => { setView('list'); setSelected(null) }}
           messages={chat.messages}
           loading={chat.loading}
           sending={chat.sending}

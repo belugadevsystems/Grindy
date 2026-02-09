@@ -40,10 +40,14 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
   }
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.electronAPI?.tracker?.onActivityUpdate) return
-    const unsub = window.electronAPI.tracker.onActivityUpdate((a) => {
+    const api = typeof window !== 'undefined' ? window.electronAPI : null
+    if (!api?.tracker?.onActivityUpdate) return
+    const unsub = api.tracker.onActivityUpdate((a) => {
       setCurrentActivity(a as Parameters<typeof setCurrentActivity>[0])
     })
+    api.tracker.getCurrentActivity?.().then((a) => {
+      if (a) setCurrentActivity(a as Parameters<typeof setCurrentActivity>[0])
+    }).catch(() => {})
     return unsub
   }, [setCurrentActivity])
 
