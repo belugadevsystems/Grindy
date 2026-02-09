@@ -107,12 +107,14 @@ export interface ActivitySegmentForXP {
 
 /**
  * Compute XP gained per skill from activity segments (1 XP per second per segment).
+ * Only selected (focused) app windows count; idle/unknown segments are skipped.
  */
 export function computeSessionSkillXP(
   activities: ActivitySegmentForXP[]
 ): Record<string, number> {
   const bySkill: Record<string, number> = {}
   for (const a of activities) {
+    if (a.category === 'idle') continue
     const skillId = categoryToSkillId(a.category)
     const seconds = Math.max(0, Math.floor((a.endTime - a.startTime) / 1000))
     bySkill[skillId] = (bySkill[skillId] ?? 0) + seconds

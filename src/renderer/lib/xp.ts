@@ -104,6 +104,7 @@ const CATEGORY_XP_MULTIPLIER: Record<string, number> = {
   social: 0.5,
   browsing: 0.8,
   other: 0.5,
+  idle: 0, // only selected app windows give XP
 }
 
 export function computeSessionXP(
@@ -112,6 +113,7 @@ export function computeSessionXP(
 ): number {
   let weighted = 0
   for (const a of activities) {
+    if (a.category === 'idle') continue // only selected (focused) app windows give XP
     const sec = (a.end_time - a.start_time) / 1000
     const mult = CATEGORY_XP_MULTIPLIER[a.category || 'other'] ?? 0.5
     weighted += sec * mult

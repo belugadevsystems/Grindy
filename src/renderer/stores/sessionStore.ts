@@ -167,7 +167,7 @@ function sendStreakNotification(api: NonNullable<Window['electronAPI']>): void {
 }
 
 // ── Real-Time XP Tick Constants ──
-// XP per minute by category (same as computeSessionXP but for ticks)
+// XP per minute by category (same as computeSessionXP but for ticks). Only selected app windows give XP.
 const CATEGORY_XP_RATE: Record<string, number> = {
   coding: 2,
   design: 1.5,
@@ -178,6 +178,7 @@ const CATEGORY_XP_RATE: Record<string, number> = {
   social: 0.5,
   browsing: 0.8,
   other: 0.5,
+  idle: 0, // desktop/unknown — no XP
 }
 
 const XP_TICK_INTERVAL_MS = 30_000 // 30 seconds
@@ -199,8 +200,9 @@ function startXpTicking() {
     const tickDurationMs = now - lastXpTickTime
     lastXpTickTime = now
 
-    // Calculate XP for this tick
+    // Only selected (focused) app windows give XP; idle/unknown do not
     const category = currentActivity?.category || 'other'
+    if (category === 'idle') return
     const rate = CATEGORY_XP_RATE[category] ?? 0.5
     const xpEarned = Math.round((tickDurationMs / 60_000) * rate)
 
@@ -288,7 +290,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       pendingSkillLevelUpSkill?: { skillId: string; level: number } | null
       skillLevelNotified?: Record<string, number>
     } = { elapsedSeconds: Math.max(0, elapsed) }
-    if (status === 'running' && currentActivity) {
+    if (status === 'running' && currentActivity && currentActivity.category !== 'idle') {
       const skillId = categoryToSkillId(currentActivity.category)
       const newSessionXP = { ...sessionSkillXP, [skillId]: (sessionSkillXP[skillId] ?? 0) + 1 }
       updates.sessionSkillXP = newSessionXP

@@ -111,6 +111,18 @@ while ($true) {
                 $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
                 if ($proc) { $pname = $proc.ProcessName }
             }
+            if (-not $pname) {
+                try {
+                    $byPid = Get-Process | Where-Object { $_.Id -eq $pid2 } | Select-Object -First 1
+                    if ($byPid -and $byPid.ProcessName) { $pname = $byPid.ProcessName }
+                } catch { }
+            }
+            if (-not $pname) {
+                try {
+                    $cim2 = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
+                    if ($cim2 -and $cim2.ExecutablePath) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim2.ExecutablePath) }
+                } catch { }
+            }
             $rawTitle = [WinApi]::GetTitle($hwnd)
             $title = ($rawTitle -replace '[\r\n]+', ' ' -replace '\|', '&#124;').Trim()
             if ($pname -eq 'explorer') {
@@ -350,7 +362,8 @@ function stopWindowDetector(): void {
 }
 
 // ── Activity types ──
-export type ActivityCategory = 'coding' | 'design' | 'games' | 'social' | 'browsing' | 'creative' | 'learning' | 'music' | 'other'
+/** 'idle' = desktop/explorer or unknown window — does not give XP. */
+export type ActivityCategory = 'coding' | 'design' | 'games' | 'social' | 'browsing' | 'creative' | 'learning' | 'music' | 'other' | 'idle'
 
 export interface ActivitySnapshot {
   appName: string
@@ -417,7 +430,7 @@ function categorizeMultiple(appName: string, windowTitle: string): ActivityCateg
   if (/^(ableton|fl studio|reaper|logic|audacity|premiere|davinci|resolve|obs|blender|afterfx|vegas|cinema4d)$/i.test(lowerApp) || /premiere|davinci|blender|after effects/i.test(lowerTitle)) return ['creative']
   if (/^(notion|obsidian|anki|sumatrapdf|acrobat|acrord32|foxit|foxitreader|kindle|evernote|onenote)$/i.test(lowerApp) || /\.pdf\b|notion|obsidian|anki/i.test(lowerTitle)) return ['learning']
   if (/^(spotify|music|soundcloud|itunes|tidal|yandexmusic|deezer|wmplayer|vkmusic)$/i.test(lowerApp) || MUSIC_TITLE.test(lowerTitle)) return ['music']
-  if (/^(steam|epicgameslauncher|valorant|leagueclient|dota2|minecraft|fortniteclient|gta|csgo|cs2|overwatch|battle\.net|javaw)$/i.test(lowerApp) || /game|play|steam/i.test(lowerTitle)) return ['games']
+  if (/^(steam|epicgameslauncher|valorant|leagueclient|dota2|dota\s*2|minecraft|fortniteclient|gta|csgo|cs2|overwatch|battle\.net|javaw)$/i.test(lowerApp.replace(/\s+/g, '')) || /dota\s*2|game|play|steam/i.test(lowerTitle)) return ['games']
   if (/^(telegram|discord|slack|whatsapp|teams)$/i.test(lowerApp)) return ['social']
   if (/^(chrome|firefox|msedge|brave|opera|vivaldi|arc|yandex)$/i.test(lowerApp)) {
     const isMusic = MUSIC_TITLE.test(lowerTitle)
@@ -516,7 +529,11 @@ function poll(): void {
       emitIdle(false)
     }
 
-    const categories = categorizeMultiple(rawName, windowTitle)
+    // Idle (desktop/explorer) and Unknown windows do not give XP — only "selected" app windows do
+    const categories =
+      rawName === 'Idle' || rawName === 'Unknown'
+        ? (['idle'] as ActivityCategory[])
+        : categorizeMultiple(rawName, windowTitle)
     const primaryCategory = categories[0] ?? 'other'
     const displayName = getAppDisplayName(rawName)
     lastActivity = { appName: displayName, windowTitle, category: primaryCategory, timestamp: now, keystrokes: totalSessionKeystrokes }
