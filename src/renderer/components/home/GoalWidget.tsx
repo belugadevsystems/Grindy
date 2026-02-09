@@ -73,6 +73,8 @@ export function GoalWidget() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [view, setView] = useState<ViewMode>('list')
   const [editingGoal, setEditingGoal] = useState<GoalWithProgress | null>(null)
+  const [reachedGoal, setReachedGoal] = useState<GoalWithProgress | null>(null)
+  const prevProgressRef = useRef<Record<string, number>>({})
 
   const loadGoals = useCallback(async () => {
     const api = window.electronAPI
@@ -89,6 +91,17 @@ export function GoalWidget() {
         withProgress.push({ ...g, progress })
       }
       setGoals(withProgress)
+      // Detect first-time reach: progress just crossed target_seconds
+      for (const g of withProgress) {
+        if (g.progress >= g.target_seconds) {
+          const prev = prevProgressRef.current[g.id] ?? 0
+          if (prev < g.target_seconds) {
+            setReachedGoal(g)
+            break
+          }
+        }
+      }
+      withProgress.forEach((g) => { prevProgressRef.current[g.id] = g.progress })
     } catch (e) { console.error('loadGoals failed', e) }
   }, [])
 
@@ -108,9 +121,37 @@ export function GoalWidget() {
 
   useEffect(() => {
     loadAll()
-    const interval = setInterval(loadAll, 30000)
+    const interval = setInterval(loadAll, 15000)
     return () => clearInterval(interval)
   }, [loadAll])
+
+  const handleCompleteGoal = useCallback(async () => {
+    if (!reachedGoal) return
+    const api = window.electronAPI
+    if (!api?.db?.completeGoal) return
+    try {
+      await api.db.completeGoal(reachedGoal.id)
+      setReachedGoal(null)
+      setTimeout(loadGoals, 100)
+    } catch (e) { console.error('completeGoal failed', e) }
+  }, [reachedGoal, loadGoals])
+
+  const handleAddOneHour = useCallback(async () => {
+    if (!reachedGoal) return
+    const api = window.electronAPI
+    if (!api?.db?.updateGoal) return
+    try {
+      await api.db.updateGoal({
+        id: reachedGoal.id,
+        target_seconds: reachedGoal.target_seconds + 3600,
+        target_category: reachedGoal.target_category,
+        period: reachedGoal.period,
+      })
+      prevProgressRef.current[reachedGoal.id] = reachedGoal.progress
+      setReachedGoal(null)
+      setTimeout(loadGoals, 100)
+    } catch (e) { console.error('updateGoal +1h failed', e) }
+  }, [reachedGoal, loadGoals])
 
   const handleDeleteGoal = useCallback(async (id: string) => {
     const api = window.electronAPI
@@ -456,7 +497,70 @@ function TaskCreator({ onCreated, onCancel }: { onCreated: () => void; onCancel:
           Add task
         </button>
       </div>
+
+      <GoalReachedModal
+        goal={reachedGoal}
+        onClose={handleCompleteGoal}
+        onAddOneHour={handleAddOneHour}
+      />
     </div>
+  )
+}
+
+/* ── Goal Reached Modal ── */
+
+function GoalReachedModal({
+  goal,
+  onClose,
+  onAddOneHour,
+}: {
+  goal: GoalWithProgress | null
+  onClose: () => void
+  onAddOneHour: () => void
+}) {
+  if (!goal) return null
+  const categoryLabel = goal.target_category ? (CATEGORY_ICONS[goal.target_category] || '') + ' ' + goal.target_category : ''
+  return (
+    <AnimatePresence>
+      <motion.div
+        key={goal.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="rounded-2xl bg-discord-card border border-white/10 shadow-xl max-w-sm w-full p-5 space-y-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-center text-gray-100 font-medium">
+            Время вышло! Цель достигнута.
+          </p>
+          <p className="text-center text-sm text-gray-400">
+            {formatDuration(goal.target_seconds)}
+            {categoryLabel ? ` ${categoryLabel}` : ''}
+          </p>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl bg-discord-darker text-gray-300 border border-white/10 hover:bg-white/5 font-medium text-sm transition-colors"
+            >
+              Ok
+            </button>
+            <button
+              onClick={onAddOneHour}
+              className="flex-1 py-2.5 rounded-xl bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/30 hover:bg-cyber-neon/30 font-medium text-sm transition-colors"
+            >
+              Ещё час
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
