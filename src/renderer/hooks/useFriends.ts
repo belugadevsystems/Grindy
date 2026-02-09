@@ -57,7 +57,7 @@ export function useFriends() {
   const pushFriendToast = useFriendToastStore((s) => s.push)
   const previousFriendsRef = useRef<FriendProfile[] | null>(null)
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async (showLoading = false) => {
     if (!supabase || !user) {
       setFriends([])
       setPendingRequests([])
@@ -67,6 +67,7 @@ export function useFriends() {
       return
     }
     setError(null)
+    if (showLoading) setLoading(true)
     try {
       // Fetch all friendships (both accepted and pending)
       const { data: fs, error: fsError } = await supabase
@@ -286,5 +287,6 @@ export function useFriends() {
     return () => clearInterval(interval)
   }, [user, fetchFriends])
 
-  return { friends, pendingRequests, unreadByFriendId, loading, error, refresh: fetchFriends, acceptRequest, rejectRequest }
+  const refresh = useCallback(() => fetchFriends(true), [fetchFriends])
+  return { friends, pendingRequests, unreadByFriendId, loading, error, refresh, acceptRequest, rejectRequest }
 }

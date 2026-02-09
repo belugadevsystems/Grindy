@@ -81,27 +81,33 @@ export function FriendsPage() {
 
           {showLeaderboard ? (
             <Leaderboard />
-          ) : error ? (
-            <div className="rounded-xl bg-discord-card/80 border border-red-500/30 p-4 text-center">
-              <p className="text-red-400 text-sm mb-2">{error}</p>
-              <button
-                onClick={() => refresh()}
-                className="text-xs px-3 py-1.5 rounded-lg bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 hover:bg-cyber-neon/30 transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          ) : loading ? (
-            <p className="text-gray-500 text-sm py-4">Loading...</p>
           ) : (
             <>
-              <FriendList
-                friends={friends}
-                onSelectFriend={(f) => { setSelected(f); setView('profile') }}
-                onMessageFriend={(f) => { setSelected(f); setView('chat') }}
-                unreadByFriendId={unreadByFriendId}
-              />
-              {pendingRequests.filter((r) => r.direction === 'outgoing').length > 0 && (
+              {error && (
+                <div className="rounded-xl bg-discord-card/80 border border-red-500/30 p-4 text-center mb-3">
+                  <p className="text-red-400 text-sm mb-2">{error}</p>
+                  <button
+                    onClick={() => refresh()}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 hover:bg-cyber-neon/30 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {loading ? (
+                <div className="rounded-xl bg-discord-card/80 border border-white/10 p-6 text-center text-gray-500">
+                  <span className="text-2xl block mb-2">⏳</span>
+                  <p className="text-sm">Loading friends...</p>
+                </div>
+              ) : (
+                <FriendList
+                  friends={friends}
+                  onSelectFriend={(f) => { setSelected(f); setView('profile') }}
+                  onMessageFriend={(f) => { setSelected(f); setView('chat') }}
+                  unreadByFriendId={unreadByFriendId}
+                />
+              )}
+              {!loading && pendingRequests.filter((r) => r.direction === 'outgoing').length > 0 && (
                 <div className="mt-3">
                   <PendingRequests
                     requests={pendingRequests.filter((r) => r.direction === 'outgoing')}

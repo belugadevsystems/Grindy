@@ -162,27 +162,19 @@ function startWindowDetector(): void {
   hasReceivedWinLine = false
   detectorStderrLines = []
 
-  let scriptDir: string
-  try {
-    scriptDir = app.getPath('userData')
-    detectorScriptPath = path.join(scriptDir, 'idly-window-detector.ps1')
-    fs.writeFileSync(detectorScriptPath, '\uFEFF' + DETECTOR_SCRIPT, { encoding: 'utf8' })
-  } catch (e) {
-    log.error('[tracker] Failed to write detector script', e)
-    return
-  }
-
-  // Prefer Windows PowerShell 5 (user32.dll works); avoid PowerShell Core (pwsh) which may differ
-  const psExe = getPowerShellPath()
-  const args = ['-NoProfile', '-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Scope', 'Process', '-File', detectorScriptPath]
+  const scriptDir = app.getPath('userData')
   const spawnOpts: SpawnOptions = {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
     cwd: scriptDir,
-    env: process.env,
+    env: { ...process.env },
   }
 
-  function trySpawn(executable: string): ChildProcess | null {
+  // 1) Try -EncodedCommand (no file write; bypasses execution policy / path issues)
+  const encodedScript = Buffer.from(DETECTOR_SCRIPT, 'utf16le').toString('base64')
+  const encodedArgs = ['-NoProfile', '-NoLogo', '-Sta', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Scope', 'Process', '-EncodedCommand', encodedScript]
+
+  function trySpawn(executable: string, args: string[]): ChildProcess | null {
     try {
       return spawn(executable, args, spawnOpts)
     } catch (e) {
@@ -191,10 +183,28 @@ function startWindowDetector(): void {
     }
   }
 
-  detectorProcess = trySpawn(psExe)
+  const psExe = getPowerShellPath()
+  detectorProcess = trySpawn(psExe, encodedArgs)
   if (!detectorProcess) {
-    detectorProcess = trySpawn('powershell')
+    detectorProcess = trySpawn('powershell', encodedArgs)
   }
+
+  // 2) Fallback: -File (write script to userData)
+  if (!detectorProcess) {
+    try {
+      detectorScriptPath = path.join(scriptDir, 'idly-window-detector.ps1')
+      fs.writeFileSync(detectorScriptPath, '\uFEFF' + DETECTOR_SCRIPT, { encoding: 'utf8' })
+    } catch (e) {
+      log.error('[tracker] Failed to write detector script', e)
+      return
+    }
+    const fileArgs = ['-NoProfile', '-NoLogo', '-Sta', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Scope', 'Process', '-File', detectorScriptPath]
+    detectorProcess = trySpawn(psExe, fileArgs)
+    if (!detectorProcess) {
+      detectorProcess = trySpawn('powershell', fileArgs)
+    }
+  }
+
   if (!detectorProcess) {
     log.error('[tracker] Could not start PowerShell. Check that Windows PowerShell is installed.')
     if (detectorScriptPath) {
@@ -240,12 +250,13 @@ function startWindowDetector(): void {
     }
   })
 
-  log.info('[tracker] Detector process started', { pid: detectorProcess.pid, scriptPath: detectorScriptPath })
+  log.info('[tracker] Detector process started', { pid: detectorProcess.pid, scriptPath: detectorScriptPath ?? 'EncodedCommand' })
 
   if (detectorRestartTimeout) {
     clearTimeout(detectorRestartTimeout)
     detectorRestartTimeout = null
   }
+  const NO_DATA_MS = 25_000
   detectorRestartTimeout = setTimeout(() => {
     detectorRestartTimeout = null
     if (hasReceivedWinLine || detectorRestartCount > 0) {
@@ -254,11 +265,11 @@ function startWindowDetector(): void {
       }
       return
     }
-    log.warn('[tracker] No window data after 10s, restarting detector once', { stderr: detectorStderrLines })
+    log.warn('[tracker] No window data after 25s, restarting detector once', { stderr: detectorStderrLines })
     detectorRestartCount++
     stopWindowDetector()
     startWindowDetector()
-  }, 10_000)
+  }, NO_DATA_MS)
 }
 
 function stopWindowDetector(): void {
