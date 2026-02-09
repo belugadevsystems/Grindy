@@ -237,6 +237,8 @@ const listeners: ((a: ActivitySnapshot) => void)[] = []
 let segments: ActivitySegment[] = []
 let currentSegmentStart = 0
 let currentSegmentActivity: ActivitySnapshot | null = null
+/** When multiple categories (e.g. music + learning), we push one segment per category. */
+let currentSegmentCategories: ActivityCategory[] = []
 let currentSegmentKeystrokes = 0
 let totalSessionKeystrokes = 0
 
@@ -252,22 +254,30 @@ function emitIdle(idle: boolean) {
   idleListeners.forEach(cb => cb(idle))
 }
 
-function categorize(appName: string, windowTitle: string): ActivityCategory {
+const MUSIC_TITLE = /youtube\s*music|music\.youtube|яндекс\s*музык|music\.yandex|music\.yandex\.ru|yandex\s*music/i
+const LEARNING_TITLE = /подкаст|podcast|лекци|lecture|курс|course|udemy|stepik|edx|coursera|обучение|learning|теория/i
+
+/** Returns one or more categories (e.g. music + learning for podcast on music site). */
+function categorizeMultiple(appName: string, windowTitle: string): ActivityCategory[] {
   const lowerApp = appName.toLowerCase()
   const lowerTitle = windowTitle.toLowerCase()
-  if (/^(code|cursor|intellij|webstorm|pycharm|idea|devenv|rider)$/i.test(lowerApp) || /visual studio/i.test(lowerApp)) return 'coding'
-  if (/\.(tsx?|jsx?|py|rs|go|cpp|cs|java)\b/i.test(lowerTitle)) return 'coding'
-  if (/^(figma|photoshop|sketch|canva|illustrator|xd|invision|zeplin|affinity|gimp|krita)$/i.test(lowerApp) || /figma|design|mockup/i.test(lowerTitle)) return 'design'
-  if (/^(ableton|fl studio|reaper|logic|audacity|premiere|davinci|resolve|obs|blender|afterfx|vegas|cinema4d)$/i.test(lowerApp) || /premiere|davinci|blender|after effects/i.test(lowerTitle)) return 'creative'
-  if (/^(notion|obsidian|anki|sumatrapdf|acrobat|acrord32|foxit|foxitreader|kindle|evernote|onenote)$/i.test(lowerApp) || /\.pdf\b|notion|obsidian|anki/i.test(lowerTitle)) return 'learning'
-  if (/^(spotify|music|soundcloud|itunes|tidal|yandexmusic)$/i.test(lowerApp) || /youtube.*music|spotify|soundcloud/i.test(lowerTitle)) return 'music'
-  if (/^(steam|epicgameslauncher|valorant|leagueclient|dota2|minecraft|fortniteclient|gta|csgo|cs2|overwatch|battle\.net|javaw)$/i.test(lowerApp) || /game|play|steam/i.test(lowerTitle)) return 'games'
-  if (/^(telegram|discord|slack|whatsapp|teams)$/i.test(lowerApp)) return 'social'
+  if (/^(code|cursor|intellij|webstorm|pycharm|idea|devenv|rider)$/i.test(lowerApp) || /visual studio/i.test(lowerApp)) return ['coding']
+  if (/\.(tsx?|jsx?|py|rs|go|cpp|cs|java)\b/i.test(lowerTitle)) return ['coding']
+  if (/^(figma|photoshop|sketch|canva|illustrator|xd|invision|zeplin|affinity|gimp|krita)$/i.test(lowerApp) || /figma|design|mockup/i.test(lowerTitle)) return ['design']
+  if (/^(ableton|fl studio|reaper|logic|audacity|premiere|davinci|resolve|obs|blender|afterfx|vegas|cinema4d)$/i.test(lowerApp) || /premiere|davinci|blender|after effects/i.test(lowerTitle)) return ['creative']
+  if (/^(notion|obsidian|anki|sumatrapdf|acrobat|acrord32|foxit|foxitreader|kindle|evernote|onenote)$/i.test(lowerApp) || /\.pdf\b|notion|obsidian|anki/i.test(lowerTitle)) return ['learning']
+  if (/^(spotify|music|soundcloud|itunes|tidal|yandexmusic)$/i.test(lowerApp) || /youtube.*music|spotify|soundcloud/i.test(lowerTitle)) return ['music']
+  if (/^(steam|epicgameslauncher|valorant|leagueclient|dota2|minecraft|fortniteclient|gta|csgo|cs2|overwatch|battle\.net|javaw)$/i.test(lowerApp) || /game|play|steam/i.test(lowerTitle)) return ['games']
+  if (/^(telegram|discord|slack|whatsapp|teams)$/i.test(lowerApp)) return ['social']
   if (/^(chrome|firefox|msedge|brave|opera|vivaldi|arc|yandex)$/i.test(lowerApp)) {
-    if (/youtube\s*music|music\.youtube|яндекс\s*музык|music\.yandex|yandex\s*music/i.test(lowerTitle)) return 'music'
-    return 'browsing'
+    const isMusic = MUSIC_TITLE.test(lowerTitle)
+    const isLearning = LEARNING_TITLE.test(lowerTitle)
+    if (isMusic && isLearning) return ['music', 'learning']
+    if (isMusic) return ['music']
+    if (isLearning) return ['learning']
+    return ['browsing']
   }
-  return 'other'
+  return ['other']
 }
 
 function getAppDisplayName(appName: string): string {
@@ -312,15 +322,17 @@ function getAppDisplayName(appName: string): string {
 }
 
 function pushCurrentSegment(now: number): void {
-  if (!currentSegmentActivity) return
-  segments.push({
+  if (!currentSegmentActivity || currentSegmentCategories.length === 0) return
+  const base = {
     appName: currentSegmentActivity.appName,
     windowTitle: currentSegmentActivity.windowTitle,
-    category: currentSegmentActivity.category,
     startTime: currentSegmentStart,
     endTime: now,
     keystrokes: currentSegmentKeystrokes,
-  })
+  }
+  for (const cat of currentSegmentCategories) {
+    segments.push({ ...base, category: cat })
+  }
   currentSegmentKeystrokes = 0
 }
 
@@ -341,20 +353,23 @@ function poll(): void {
       emitIdle(false)
     }
 
-    const category = categorize(rawName, windowTitle)
+    const categories = categorizeMultiple(rawName, windowTitle)
+    const primaryCategory = categories[0] ?? 'other'
     const displayName = getAppDisplayName(rawName)
-    lastActivity = { appName: displayName, windowTitle, category, timestamp: now, keystrokes: totalSessionKeystrokes }
+    lastActivity = { appName: displayName, windowTitle, category: primaryCategory, timestamp: now, keystrokes: totalSessionKeystrokes }
     listeners.forEach((cb) => cb(lastActivity!))
 
-    const key = `${lastActivity.appName}|${lastActivity.category}`
-    const prevKey = currentSegmentActivity ? `${currentSegmentActivity.appName}|${currentSegmentActivity.category}` : ''
+    const key = `${lastActivity.appName}|${[...categories].sort().join(',')}`
+    const prevKey = currentSegmentActivity ? `${currentSegmentActivity.appName}|${[...currentSegmentCategories].sort().join(',')}` : ''
     if (key !== prevKey) {
       pushCurrentSegment(now)
       currentSegmentStart = now
+      currentSegmentCategories = categories
       currentSegmentActivity = lastActivity
     }
   } else {
     lastActivity = { appName: 'Unknown', windowTitle: 'Detecting...', category: 'other', timestamp: now, keystrokes: totalSessionKeystrokes }
+    currentSegmentCategories = ['other']
     listeners.forEach((cb) => cb(lastActivity!))
   }
 }
@@ -366,6 +381,7 @@ export function getTrackerApi() {
       segments = []
       currentSegmentStart = Date.now()
       currentSegmentActivity = null
+      currentSegmentCategories = []
       currentSegmentKeystrokes = 0
       totalSessionKeystrokes = 0
       isIdle = false
