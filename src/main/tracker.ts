@@ -96,6 +96,12 @@ while ($true) {
                 if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
             } catch { }
             if (-not $pname) {
+                try {
+                    $wmi = Get-WmiObject Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
+                    if ($wmi -and $wmi.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($wmi.Name) }
+                } catch { }
+            }
+            if (-not $pname) {
                 $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
                 if ($proc) { $pname = $proc.ProcessName }
             }
@@ -108,11 +114,7 @@ while ($true) {
                 [Console]::Out.WriteLine("WIN:" + $pname + "|" + $title + "|" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } else {
-                if ($title) {
-                    [Console]::Out.WriteLine("WIN:Unknown|" + $title + "|" + $keys + "|" + $idleMs)
-                } else {
-                    [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
-                }
+                [Console]::Out.WriteLine("WIN:Unknown|" + $title + "|" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             }
         } else {

@@ -16,8 +16,14 @@ import { IPC_CHANNELS } from '../shared/ipcChannels'
  *   4. On next quit the update is installed automatically
  */
 export function initAutoUpdater(win: BrowserWindow): void {
-  // Send electron-updater logs through our logger
-  autoUpdater.logger = log
+  // Custom logger: 404 is expected until a GitHub Release with latest.yml exists — log as warn, not error
+  const msgStr = (m: unknown) => (m instanceof Error ? m.message : String(m))
+  const is404 = (m: unknown) => msgStr(m).includes('404')
+  autoUpdater.logger = {
+    info: (m: string) => log.info(m),
+    warn: (m: string) => log.warn(m),
+    error: (m: unknown) => (is404(m) ? log.warn('[updater] No release (404). Check publish.repo in electron-builder config.') : log.error(msgStr(m))),
+  }
 
   // Don't auto-download — let us control the flow
   autoUpdater.autoDownload = true
