@@ -1,6 +1,7 @@
 import { autoUpdater } from 'electron-updater'
 import { BrowserWindow } from 'electron'
 import log from './logger'
+import { IPC_CHANNELS } from '../shared/ipcChannels'
 
 /**
  * Initialise auto-updater.
@@ -28,7 +29,7 @@ export function initAutoUpdater(win: BrowserWindow): void {
 
   autoUpdater.on('update-available', (info) => {
     log.info('[updater] Update available:', info.version)
-    win.webContents.send('updater:status', { status: 'downloading', version: info.version })
+    win.webContents.send(IPC_CHANNELS.updater.status, { status: 'downloading', version: info.version })
   })
 
   autoUpdater.on('update-not-available', () => {
@@ -42,7 +43,7 @@ export function initAutoUpdater(win: BrowserWindow): void {
   autoUpdater.on('update-downloaded', (info) => {
     log.info('[updater] Update downloaded:', info.version)
     // Tell renderer to show "restart to update" badge
-    win.webContents.send('updater:status', { status: 'ready', version: info.version })
+    win.webContents.send(IPC_CHANNELS.updater.status, { status: 'ready', version: info.version })
   })
 
   autoUpdater.on('error', (err) => {
