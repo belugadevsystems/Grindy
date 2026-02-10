@@ -62,65 +62,89 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
   if (!supabase || !user) return null
 
   return (
-    <div className={`flex flex-col items-center px-4 pt-3 pb-4 transition-opacity duration-150 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`flex flex-col items-center px-3 pt-3 pb-3 transition-opacity duration-150 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
       {/* Top row: avatar + info + sign out — overflow hidden so tooltips don't expand window */}
-      <div className="flex items-center gap-2.5 w-full max-w-[260px] min-w-0">
-        {/* Avatar */}
-        <button onClick={() => { playClickSound(); onNavigateProfile?.() }} className={`relative shrink-0 ${activeFrame ? `frame-style-${activeFrame.style}` : ''}`} title="Profile">
-          {activeFrame && (
-            <div className="frame-ring absolute -inset-1 rounded-full" style={{ background: activeFrame.gradient, opacity: 0.7, color: activeFrame.color, borderColor: activeFrame.color }} />
-          )}
-          <div
-            className={`frame-avatar relative w-9 h-9 rounded-full bg-discord-card flex items-center justify-center text-lg hover:scale-105 transition-transform ${
-              activeFrame ? 'border-2' : 'border border-white/10'
-            }`}
-            style={activeFrame ? { borderColor: activeFrame.color } : undefined}
-          >
-            {avatar}
-          </div>
-        </button>
-
-        {/* Name + badges */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-white font-medium text-sm leading-none truncate">{username}</span>
-
-            <span className="text-cyber-neon font-mono text-[11px] leading-none cursor-default" title="Total skill level">
-              {totalSkillLevel}/{MAX_TOTAL_SKILL_LEVEL}
-            </span>
-
-            {badgeIds.map(bId => {
-              const badge = BADGES.find(b => b.id === bId)
-              return badge ? (
-                <span key={bId} className="text-[9px] leading-none px-1 py-0.5 rounded-md border font-medium"
-                  style={{ borderColor: `${badge.color}30`, backgroundColor: `${badge.color}10`, color: badge.color }} title={badge.name}>
-                  {badge.icon}
-                </span>
-              ) : null
-            })}
-
-            {persona && (
-              <div className="relative shrink-0" onMouseEnter={() => setShowPersonaTooltip(true)} onMouseLeave={() => setShowPersonaTooltip(false)}>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-discord-card/80 border border-white/5 text-gray-400 cursor-default">
-                  {persona.emoji}
-                </span>
-                {showPersonaTooltip && (
-                  <div className="absolute right-0 top-full mt-1.5 w-44 max-w-[calc(100vw-2rem)] px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
-                    <p className="font-medium text-white">{persona.emoji} {persona.label}</p>
-                    <p className="text-gray-500 mt-1 leading-relaxed break-words">
-                      By activity. We analyze what you do and show your focus profile.
-                    </p>
-                  </div>
-                )}
-              </div>
+      <div className="flex items-center justify-between gap-3 w-full border border-white/10 rounded-full px-3 py-2 bg-discord-card/30">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          {/* Avatar */}
+          <button onClick={() => { playClickSound(); onNavigateProfile?.() }} className={`relative shrink-0 ${activeFrame ? `frame-style-${activeFrame.style}` : ''}`} title="Profile">
+            {activeFrame && (
+              <div className="frame-ring absolute -inset-1 rounded-full" style={{ background: activeFrame.gradient, opacity: 0.7, color: activeFrame.color, borderColor: activeFrame.color }} />
             )}
+            <div
+              className={`frame-avatar relative w-8 h-8 rounded-full bg-discord-card flex items-center justify-center text-base hover:scale-105 transition-transform ${
+                activeFrame ? 'border-2' : 'border border-white/10'
+              }`}
+              style={activeFrame ? { borderColor: activeFrame.color } : undefined}
+            >
+              {avatar}
+            </div>
+          </button>
 
+          {/* Name + badges */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-medium text-xs leading-none truncate">{username}</span>
+
+              <span className="text-cyber-neon font-mono text-[10px] leading-none cursor-default" title="Total skill level">
+                {totalSkillLevel}/{MAX_TOTAL_SKILL_LEVEL}
+              </span>
+
+              {persona && (
+                <div className="relative shrink-0 flex items-center" onMouseEnter={() => setShowPersonaTooltip(true)} onMouseLeave={() => setShowPersonaTooltip(false)}>
+                  <span 
+                    className="text-[9px] w-5 h-5 rounded-sm cursor-default flex items-center justify-center"
+                    style={{
+                      backgroundColor: persona.id === 'idly' ? 'rgba(234, 179, 8, 0.15)' : 
+                                       persona.id === 'developer' ? 'rgba(139, 92, 246, 0.15)' :
+                                       persona.id === 'creative' ? 'rgba(236, 72, 153, 0.15)' :
+                                       persona.id === 'gamer' ? 'rgba(34, 197, 94, 0.15)' :
+                                       persona.id === 'social' ? 'rgba(59, 130, 246, 0.15)' :
+                                       persona.id === 'explorer' ? 'rgba(14, 165, 233, 0.15)' :
+                                       persona.id === 'music_lover' ? 'rgba(168, 85, 247, 0.15)' :
+                                       persona.id === 'scholar' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                      borderColor: persona.id === 'idly' ? 'rgba(234, 179, 8, 0.3)' : 
+                                   persona.id === 'developer' ? 'rgba(139, 92, 246, 0.3)' :
+                                   persona.id === 'creative' ? 'rgba(236, 72, 153, 0.3)' :
+                                   persona.id === 'gamer' ? 'rgba(34, 197, 94, 0.3)' :
+                                   persona.id === 'social' ? 'rgba(59, 130, 246, 0.3)' :
+                                   persona.id === 'explorer' ? 'rgba(14, 165, 233, 0.3)' :
+                                   persona.id === 'music_lover' ? 'rgba(168, 85, 247, 0.3)' :
+                                   persona.id === 'scholar' ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                      borderWidth: '1px',
+                      borderStyle: 'solid'
+                    }}
+                  >
+                    {persona.emoji}
+                  </span>
+                  {showPersonaTooltip && (
+                    <div className="absolute left-0 top-full mt-1.5 w-44 px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
+                      <p className="font-medium text-white">{persona.emoji} {persona.label}</p>
+                      <p className="text-gray-500 mt-1 leading-relaxed break-words">
+                        By activity. We analyze what you do and show your focus profile.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {badgeIds.map(bId => {
+                const badge = BADGES.find(b => b.id === bId)
+                return badge ? (
+                  <span key={bId} className="text-[8px] leading-none px-1 py-0.5 rounded-md border font-medium"
+                    style={{ borderColor: `${badge.color}30`, backgroundColor: `${badge.color}10`, color: badge.color }} title={badge.name}>
+                    {badge.icon}
+                  </span>
+                ) : null
+              })}
+
+            </div>
           </div>
         </div>
 
         {/* Sign out */}
-        <button onClick={() => signOut()} className="text-gray-600 hover:text-discord-red transition-colors shrink-0" title="Sign out">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <button onClick={() => signOut()} className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:text-discord-red hover:bg-white/5 transition-all border border-white/10 shrink-0" title="Sign out">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

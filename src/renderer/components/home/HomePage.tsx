@@ -59,7 +59,7 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
     <div className="flex flex-col h-full">
       <ProfileBar onNavigateProfile={onNavigateProfile} />
 
-      <div className="flex-1 flex flex-col items-center justify-start pt-2 pb-2 px-4 gap-4">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4">
         {/* Top: mascot + banner */}
         <div className="flex flex-col items-center w-full px-2">
           {showWelcome && status === 'idle' ? (
@@ -69,7 +69,7 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
               <img
                 src={mascotImg}
                 alt=""
-                className="w-16 h-16 mb-1.5"
+                className="w-12 h-12 mb-1"
                 draggable={false}
               />
               <MotivationBanner isRunning={status !== 'idle'} />
@@ -101,7 +101,7 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
         </div>
 
         {/* Goal */}
-        <div className="flex flex-col items-center w-full max-w-xs mt-1">
+        <div className="flex flex-col items-center w-full max-w-xs">
           <GoalWidget />
         </div>
       </div>

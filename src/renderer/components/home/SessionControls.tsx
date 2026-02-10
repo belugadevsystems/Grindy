@@ -84,17 +84,17 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
       </AnimatePresence>
 
       {/* Main controls — centered */}
-      <div className="flex items-center justify-center gap-6">
+      <div className="flex items-center justify-center gap-4">
         <div className="relative">
           {glowPulse && (
             <div className="absolute -inset-2 rounded-[20px] animate-glow-pulse pointer-events-none" />
           )}
           <button
             onClick={handleStartStop}
-            className={`relative min-w-[120px] px-8 py-3 rounded-2xl font-bold text-sm transition-colors duration-150 active:scale-[0.93] ${
+            className={`relative ${isActive ? 'w-[95px] py-3' : 'min-w-[160px] px-10 py-4'} rounded-2xl font-bold text-sm transition-colors duration-150 active:scale-[0.93] ${
               isActive
                 ? 'bg-discord-red text-white hover:bg-red-600'
-                : 'bg-cyber-neon text-discord-darker shadow-glow hover:shadow-[0_0_30px_rgba(0,255,136,0.5)]'
+                : 'bg-cyber-neon text-discord-darker text-base shadow-glow hover:shadow-[0_0_30px_rgba(0,255,136,0.5)]'
             }`}
           >
             {isActive ? 'STOP' : 'GRIND'}
@@ -103,7 +103,7 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
         {isActive && (
           <button
             onClick={handlePauseResume}
-            className="py-3 px-5 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-150 active:scale-95 border-2 border-[#5865F2]/50 bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/25 hover:border-[#5865F2]/70 hover:shadow-[0_0_20px_rgba(88,101,242,0.2)]"
+            className="w-[95px] py-3 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-150 active:scale-95 border-2 border-[#5865F2]/50 bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/25 hover:border-[#5865F2]/70 hover:shadow-[0_0_20px_rgba(88,101,242,0.2)]"
           >
             {isPaused ? 'RESUME' : 'PAUSE'}
           </button>

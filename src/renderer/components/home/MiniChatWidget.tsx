@@ -131,7 +131,7 @@ export function MiniChatWidget() {
   if (!user) return null
 
   return (
-    <div ref={widgetRef} className="fixed bottom-24 left-4 z-40">
+    <div ref={widgetRef} className="fixed bottom-4 left-4 z-40">
       {/* Circular Button */}
       <AnimatePresence>
         {widgetState === 'collapsed' && (
@@ -142,7 +142,7 @@ export function MiniChatWidget() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleToggleWidget}
-            className={`relative w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all ${
+            className={`relative w-10 h-10 rounded-full flex items-center justify-center text-base transition-all ${
               unreadMessagesCount > 0
                 ? 'bg-cyber-neon/20 text-cyber-neon border-2 border-cyber-neon/40 shadow-[0_0_12px_rgba(0,255,136,0.3)]'
                 : 'bg-discord-card text-gray-400 border-2 border-white/10 hover:border-white/20'
