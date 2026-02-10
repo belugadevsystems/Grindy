@@ -205,21 +205,25 @@ export function ProfilePage({ onBack }: { onBack?: () => void }) {
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, white 0px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, white 0px, transparent 1px, transparent 20px)' }} />
 
         <div className="relative flex items-center gap-4">
-          {/* Avatar with frame */}
-          <div className="relative shrink-0">
+          {/* Avatar with frame — same structure as cosmetics preview */}
+          <div className={`relative shrink-0 w-16 h-16 ${
+            activeFrame ? `frame-style-${activeFrame.style}` : ''
+          }`}>
             {activeFrame && (
               <div
-                className="absolute -inset-1.5 rounded-2xl"
+                className="frame-ring absolute -inset-2 rounded-2xl"
                 style={{
                   background: activeFrame.gradient,
-                  opacity: 0.8,
+                  opacity: 0.85,
+                  color: activeFrame.color,
+                  borderColor: activeFrame.color,
                 }}
               />
             )}
-            <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-3xl relative ${
+            <div className={`frame-avatar relative w-16 h-16 rounded-xl flex items-center justify-center text-3xl ${
               activeFrame ? 'border-2' : 'border border-white/10'
             } bg-discord-darker`}
-              style={activeFrame ? { borderColor: activeFrame.color } : undefined}
+              style={activeFrame ? { borderColor: `${activeFrame.color}b0` } : undefined}
             >
               {avatar}
             </div>

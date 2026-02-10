@@ -3,7 +3,6 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/authStore'
 import { getStreakMultiplier } from '../../lib/xp'
 import { skillLevelFromXP, MAX_TOTAL_SKILL_LEVEL } from '../../lib/skills'
-import { detectPersona } from '../../lib/persona'
 import { FRAMES, BADGES, getEquippedFrame, getEquippedBadges } from '../../lib/cosmetics'
 import { playClickSound } from '../../lib/sounds'
 
@@ -16,8 +15,6 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
   const [username, setUsername] = useState('')
   const [avatar, setAvatar] = useState('🤖')
   const [totalSkillLevel, setTotalSkillLevel] = useState(0)
-  const [persona, setPersona] = useState<{ emoji: string; label: string; description: string } | null>(null)
-  const [showPersonaTooltip, setShowPersonaTooltip] = useState(false)
   const [showBadgeTooltip, setShowBadgeTooltip] = useState<string | null>(null)
   const [frameId, setFrameId] = useState<string | null>(null)
   const [badgeIds, setBadgeIds] = useState<string[]>([])
@@ -50,120 +47,78 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
     if (api?.db?.getStreak) {
       api.db.getStreak().then((s: number) => setStreak(s || 0))
     }
-    if (api?.db?.getCategoryStats) {
-      api.db.getCategoryStats().then((cats) => {
-        const p = detectPersona((cats || []) as { category: string; total_ms: number }[])
-        setPersona(p)
-      })
-    } else {
-      setPersona(detectPersona([]))
-    }
   }, [user])
 
   if (!supabase || !user) return null
 
   return (
-    <div className={`flex flex-col items-center px-3 pt-3 pb-3 transition-opacity duration-150 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Top row: avatar + info + sign out — overflow hidden so tooltips don't expand window */}
-      <div className="flex items-center justify-between gap-3 w-full border border-white/10 rounded-full px-3 py-2 bg-discord-card/30">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          {/* Avatar */}
-          <button
-            onClick={() => { playClickSound(); onNavigateProfile?.() }}
-            className={`relative shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm hover:brightness-110 transition-all ${
-              activeFrame ? `frame-style-${activeFrame.style}` : ''
-            }`}
-            title="Profile"
-          >
-            {activeFrame && (
-              <div
-                className="frame-ring absolute -inset-[1.5px] rounded-full"
-                style={{ background: activeFrame.gradient, opacity: 0.25, borderColor: activeFrame.color }}
-              />
-            )}
+    <div className={`flex flex-col items-center px-3 pt-3 pb-2 transition-opacity duration-150 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+      <div className="flex items-center gap-3 w-full">
+
+        {/* Avatar — matches ProfilePage card style: rounded-lg, solid border, vivid ring */}
+        <button
+          onClick={() => { playClickSound(); onNavigateProfile?.() }}
+          className={`relative shrink-0 w-10 h-10 flex items-center justify-center ${
+            activeFrame ? `frame-style-${activeFrame.style}` : ''
+          }`}
+          title="Profile"
+        >
+          {activeFrame && (
             <div
-              className={`frame-avatar relative w-full h-full rounded-full flex items-center justify-center ${
-                activeFrame ? 'border border-[1px]' : 'border border-white/[0.06]'
-              }`}
-              style={activeFrame ? { borderColor: `${activeFrame.color}60` } : undefined}
-            >
-              {avatar}
-            </div>
-          </button>
+              className="frame-ring absolute inset-0 rounded-lg"
+              style={{ background: activeFrame.gradient, opacity: 0.8, color: activeFrame.color, borderColor: activeFrame.color }}
+            />
+          )}
+          <div
+            className={`frame-avatar relative w-8 h-8 rounded-lg bg-discord-darker flex items-center justify-center text-lg leading-none ${
+              activeFrame ? 'border' : 'border border-white/10'
+            }`}
+            style={activeFrame ? { borderColor: activeFrame.color } : undefined}
+          >
+            {avatar}
+          </div>
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-discord-darker z-10" />
+        </button>
 
-          {/* Name + badges */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-white font-medium text-xs leading-none truncate">{username}</span>
-
-              <span className="text-cyber-neon font-mono text-[10px] leading-none cursor-default" title="Total skill level">
-                {totalSkillLevel}/{MAX_TOTAL_SKILL_LEVEL}
-              </span>
-
-              {persona && (
-                <div className="relative shrink-0 flex items-center" onMouseEnter={() => setShowPersonaTooltip(true)} onMouseLeave={() => setShowPersonaTooltip(false)}>
-                  <span 
-                    className="text-[9px] w-5 h-5 rounded-sm cursor-default flex items-center justify-center"
-                    style={{
-                      backgroundColor: persona.id === 'idly' ? 'rgba(234, 179, 8, 0.15)' : 
-                                       persona.id === 'developer' ? 'rgba(139, 92, 246, 0.15)' :
-                                       persona.id === 'creative' ? 'rgba(236, 72, 153, 0.15)' :
-                                       persona.id === 'gamer' ? 'rgba(34, 197, 94, 0.15)' :
-                                       persona.id === 'social' ? 'rgba(59, 130, 246, 0.15)' :
-                                       persona.id === 'explorer' ? 'rgba(14, 165, 233, 0.15)' :
-                                       persona.id === 'music_lover' ? 'rgba(168, 85, 247, 0.15)' :
-                                       persona.id === 'scholar' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(255, 255, 255, 0.1)',
-                      borderColor: persona.id === 'idly' ? 'rgba(234, 179, 8, 0.3)' : 
-                                   persona.id === 'developer' ? 'rgba(139, 92, 246, 0.3)' :
-                                   persona.id === 'creative' ? 'rgba(236, 72, 153, 0.3)' :
-                                   persona.id === 'gamer' ? 'rgba(34, 197, 94, 0.3)' :
-                                   persona.id === 'social' ? 'rgba(59, 130, 246, 0.3)' :
-                                   persona.id === 'explorer' ? 'rgba(14, 165, 233, 0.3)' :
-                                   persona.id === 'music_lover' ? 'rgba(168, 85, 247, 0.3)' :
-                                   persona.id === 'scholar' ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255, 255, 255, 0.1)',
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}
-                  >
-                    {persona.emoji}
+        {/* Info column */}
+        <div className="flex-1 min-w-0">
+          {/* Row 1: name + level */}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-white font-semibold text-sm leading-[1.3] truncate pb-0.5">{username}</span>
+            <span className="text-cyber-neon font-mono text-[10px] leading-none cursor-default" title="Total skill level">
+              {totalSkillLevel}/{MAX_TOTAL_SKILL_LEVEL}
+            </span>
+          </div>
+          {/* Row 2: badges + streak */}
+          <div className="flex items-center gap-1 mt-px">
+            {badgeIds.map(bId => {
+              const badge = BADGES.find(b => b.id === bId)
+              return badge ? (
+                <div key={bId} className="relative shrink-0 flex items-center" onMouseEnter={() => setShowBadgeTooltip(bId)} onMouseLeave={() => setShowBadgeTooltip(null)}>
+                  <span className="w-[18px] h-[18px] flex items-center justify-center text-[10px] leading-none rounded border font-medium cursor-default"
+                    style={{ borderColor: `${badge.color}40`, backgroundColor: `${badge.color}15`, color: badge.color }}>
+                    {badge.icon}
                   </span>
-                  {showPersonaTooltip && (
-                    <div className="absolute left-0 top-full mt-1.5 w-44 px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
-                      <p className="font-medium text-white">{persona.emoji} {persona.label}</p>
+                  {showBadgeTooltip === bId && (
+                    <div className="absolute left-0 top-full mt-1.5 w-36 px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
+                      <p className="font-medium text-white">{badge.icon} {badge.name}</p>
                       <p className="text-gray-500 mt-1 leading-relaxed break-words">
-                        By activity. We analyze what you do and show your focus profile.
+                        {badge.description}
                       </p>
                     </div>
                   )}
                 </div>
-              )}
+              ) : null
+            })}
 
-              {badgeIds.map(bId => {
-                const badge = BADGES.find(b => b.id === bId)
-                return badge ? (
-                  <div key={bId} className="relative shrink-0 flex items-center" onMouseEnter={() => setShowBadgeTooltip(bId)} onMouseLeave={() => setShowBadgeTooltip(null)}>
-                    <span className="w-5 h-5 flex items-center justify-center text-[11px] leading-none rounded-sm border font-medium cursor-default"
-                      style={{ borderColor: `${badge.color}40`, backgroundColor: `${badge.color}15`, color: badge.color }}>
-                      {badge.icon}
-                    </span>
-                    {showBadgeTooltip === bId && (
-                      <div className="absolute left-0 top-full mt-1.5 w-36 px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
-                        <p className="font-medium text-white">{badge.icon} {badge.name}</p>
-                        <p className="text-gray-500 mt-1 leading-relaxed break-words">
-                          {badge.description}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : null
-              })}
-
-            </div>
+            {streak > 1 && (
+              <span className="text-[10px] text-orange-400/80 font-mono leading-none">🔥{streak}d</span>
+            )}
           </div>
         </div>
 
         {/* Sign out */}
-        <button onClick={() => signOut()} className="w-7 h-7 rounded-full flex items-center justify-center text-gray-600 hover:text-discord-red hover:bg-white/5 transition-all border border-white/10 shrink-0" title="Sign out">
+        <button onClick={() => signOut()} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-discord-red hover:bg-white/5 transition-all shrink-0" title="Sign out">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />

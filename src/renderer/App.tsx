@@ -14,6 +14,7 @@ import { StreakOverlay } from './components/animations/StreakOverlay'
 import { LootDrop } from './components/alerts/LootDrop'
 import { FriendToasts } from './components/alerts/FriendToasts'
 import { SkillLevelUpModal } from './components/home/SkillLevelUpModal'
+import { MiniChatWidget } from './components/home/MiniChatWidget'
 import { useFriends } from './hooks/useFriends'
 import { useChat } from './hooks/useChat'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -127,6 +128,7 @@ export default function App() {
         <LootDrop />
         <FriendToasts />
         <SkillLevelUpModal />
+        <MiniChatWidget />
       </div>
     </AuthGate>
   )

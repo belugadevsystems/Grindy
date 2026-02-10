@@ -8,10 +8,7 @@ import { SessionComplete } from './SessionComplete'
 import { MotivationBanner } from './MotivationBanner'
 import { WelcomeBanner } from './WelcomeBanner'
 import { GoalWidget } from './GoalWidget'
-import { MiniChatWidget } from './MiniChatWidget'
 import { useSessionStore } from '../../stores/sessionStore'
-import { useAuthStore } from '../../stores/authStore'
-import { supabase } from '../../lib/supabase'
 import mascotImg from '../../assets/mascot.png'
 
 interface HomePageProps {
@@ -20,7 +17,6 @@ interface HomePageProps {
 
 export function HomePage({ onNavigateProfile }: HomePageProps) {
   const { showComplete, setCurrentActivity, status } = useSessionStore()
-  const { user } = useAuthStore()
   const [showWelcome, setShowWelcome] = useState(false)
 
   useEffect(() => {
@@ -109,9 +105,6 @@ export function HomePage({ onNavigateProfile }: HomePageProps) {
       <AnimatePresence>
         {showComplete && <SessionComplete />}
       </AnimatePresence>
-
-      {/* Mini Chat Widget - only show when authenticated and Supabase is configured */}
-      {user && supabase && <MiniChatWidget />}
 
     </div>
   )
