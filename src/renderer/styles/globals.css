@@ -191,7 +191,7 @@ input, textarea {
 
 .frame-style-broken .frame-ring {
   animation: broken-shift 3s ease-in-out infinite;
-  border: 2px dashed;
+  border: 0.5px dashed;
   border-radius: 12px;
 }
 
@@ -207,7 +207,7 @@ input, textarea {
     repeating-linear-gradient(
       0deg,
       transparent 0px,
-      rgba(0, 255, 136, 0.15) 1px,
+      rgba(0, 255, 136, 0.08) 1px,
       transparent 2px,
       transparent 4px
     );
@@ -246,20 +246,20 @@ input, textarea {
   }
   86% {
     box-shadow:
-      -3px 0 0 rgba(255, 0, 0, 0.5),
-       3px 0 0 rgba(0, 255, 255, 0.5);
+      -3px 0 0 rgba(255, 0, 0, 0.2),
+       3px 0 0 rgba(0, 255, 255, 0.2);
     transform: translate(-1px, 0);
   }
   88% {
     box-shadow:
-       2px 0 0 rgba(255, 0, 0, 0.5),
-      -2px 0 0 rgba(0, 255, 255, 0.5);
+       2px 0 0 rgba(255, 0, 0, 0.2),
+      -2px 0 0 rgba(0, 255, 255, 0.2);
     transform: translate(2px, -1px);
   }
   90% {
     box-shadow:
-      -2px 1px 0 rgba(255, 0, 0, 0.5),
-       2px -1px 0 rgba(0, 255, 255, 0.5);
+      -2px 1px 0 rgba(255, 0, 0, 0.2),
+       2px -1px 0 rgba(0, 255, 255, 0.2);
     transform: translate(0, 1px);
   }
   92% {
@@ -288,7 +288,7 @@ input, textarea {
   background: inherit;
   animation: glitch-clip 3s steps(1) infinite;
   mix-blend-mode: screen;
-  opacity: 0.6;
+  opacity: 0.3;
 }
 
 /* ── Frame style: HOLOGRAPHIC (rainbow hue rotation + shimmer) ── */
@@ -317,9 +317,9 @@ input, textarea {
   background: linear-gradient(
     105deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.25) 45%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0.25) 55%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.12) 55%,
     transparent 70%
   );
   background-size: 200% 100%;
@@ -330,18 +330,18 @@ input, textarea {
 /* ── Frame style: FLAME (wavy fire border) ── */
 
 @keyframes flame-wave {
-  0%   { border-radius: 45% 55% 55% 45% / 55% 45% 55% 45%; box-shadow: 0 -4px 12px rgba(255, 69, 0, 0.5), 0 -8px 20px rgba(255, 165, 0, 0.3); }
-  25%  { border-radius: 55% 45% 50% 50% / 45% 55% 50% 50%; box-shadow: -3px -5px 14px rgba(255, 69, 0, 0.6), 3px -10px 22px rgba(255, 165, 0, 0.4); }
-  50%  { border-radius: 50% 50% 45% 55% / 50% 50% 55% 45%; box-shadow: 0 -6px 16px rgba(255, 69, 0, 0.5), 0 -12px 24px rgba(255, 165, 0, 0.3); }
-  75%  { border-radius: 45% 55% 55% 45% / 55% 45% 45% 55%; box-shadow: 3px -4px 14px rgba(255, 69, 0, 0.6), -3px -9px 20px rgba(255, 165, 0, 0.4); }
-  100% { border-radius: 45% 55% 55% 45% / 55% 45% 55% 45%; box-shadow: 0 -4px 12px rgba(255, 69, 0, 0.5), 0 -8px 20px rgba(255, 165, 0, 0.3); }
+  0%   { border-radius: 45% 55% 55% 45% / 55% 45% 55% 45%; box-shadow: 0 -2px 6px rgba(255, 69, 0, 0.25), 0 -4px 10px rgba(255, 165, 0, 0.15); }
+  25%  { border-radius: 55% 45% 50% 50% / 45% 55% 50% 50%; box-shadow: -2px -3px 7px rgba(255, 69, 0, 0.3), 2px -5px 11px rgba(255, 165, 0, 0.2); }
+  50%  { border-radius: 50% 50% 45% 55% / 50% 50% 55% 45%; box-shadow: 0 -3px 8px rgba(255, 69, 0, 0.25), 0 -6px 12px rgba(255, 165, 0, 0.15); }
+  75%  { border-radius: 45% 55% 55% 45% / 55% 45% 45% 55%; box-shadow: 2px -2px 7px rgba(255, 69, 0, 0.3), -2px -5px 10px rgba(255, 165, 0, 0.2); }
+  100% { border-radius: 45% 55% 55% 45% / 55% 45% 55% 45%; box-shadow: 0 -2px 6px rgba(255, 69, 0, 0.25), 0 -4px 10px rgba(255, 165, 0, 0.15); }
 }
 
 @keyframes flame-flicker {
-  0%, 100% { opacity: 0.8; }
-  25% { opacity: 1; }
-  50% { opacity: 0.7; }
-  75% { opacity: 0.95; }
+  0%, 100% { opacity: 0.5; }
+  25% { opacity: 0.65; }
+  50% { opacity: 0.45; }
+  75% { opacity: 0.6; }
 }
 
 .frame-style-flame .frame-ring {
@@ -352,16 +352,16 @@ input, textarea {
 /* ── Frame style: ROYAL (double border + sparkle pulse) ── */
 
 @keyframes royal-sparkle {
-  0%, 100% { box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.3), 0 0 6px rgba(255, 215, 0, 0.2); }
-  25%      { box-shadow: inset 0 0 12px rgba(255, 215, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.3), 4px -4px 6px rgba(255, 215, 0, 0.4); }
-  50%      { box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.3), 0 0 6px rgba(255, 215, 0, 0.2), -4px 4px 6px rgba(255, 215, 0, 0.4); }
-  75%      { box-shadow: inset 0 0 14px rgba(255, 215, 0, 0.5), 0 0 12px rgba(255, 215, 0, 0.4); }
+  0%, 100% { box-shadow: inset 0 0 4px rgba(255, 215, 0, 0.15), 0 0 3px rgba(255, 215, 0, 0.1); }
+  25%      { box-shadow: inset 0 0 6px rgba(255, 215, 0, 0.25), 0 0 5px rgba(255, 215, 0, 0.15), 2px -2px 3px rgba(255, 215, 0, 0.2); }
+  50%      { box-shadow: inset 0 0 4px rgba(255, 215, 0, 0.15), 0 0 3px rgba(255, 215, 0, 0.1), -2px 2px 3px rgba(255, 215, 0, 0.2); }
+  75%      { box-shadow: inset 0 0 7px rgba(255, 215, 0, 0.25), 0 0 6px rgba(255, 215, 0, 0.2); }
 }
 
 .frame-style-royal .frame-ring {
-  border: 3px solid;
-  outline: 2px solid rgba(255, 215, 0, 0.3);
-  outline-offset: 2px;
+  border: 1px solid;
+  outline: 0.5px solid rgba(255, 215, 0, 0.15);
+  outline-offset: 1px;
   animation: royal-sparkle 3s ease-in-out infinite;
   will-change: box-shadow;
 }
@@ -371,5 +371,5 @@ input, textarea {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  border: 1px solid rgba(255, 215, 0, 0.15);
+  border: 0.5px solid rgba(255, 215, 0, 0.08);
 }

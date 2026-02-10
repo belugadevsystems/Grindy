@@ -37,7 +37,7 @@ export function SkillLevelUpModal() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-[95] bg-black/50 flex items-center justify-center p-4"
         onClick={handleContinue}
       >
         <PixelConfetti originX={0.5} originY={0.45} accentColor={skill.color} duration={2.2} />

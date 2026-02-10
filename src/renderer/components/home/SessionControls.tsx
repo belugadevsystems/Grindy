@@ -47,6 +47,19 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
 
   return (
     <div className="relative flex flex-col items-center">
+      {/* Backdrop overlay */}
+      <AnimatePresence>
+        {confirmState !== 'none' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-black/40 z-[35]"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Confirmation dialog — absolute, doesn't push buttons */}
       <AnimatePresence>
         {confirmState !== 'none' && (
@@ -55,7 +68,7 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full mb-3 rounded-2xl p-4 w-72 z-10 shadow-xl border border-amber-500/25 bg-gradient-to-b from-[#2a2520] to-[#1e1e2e]"
+            className="absolute bottom-full mb-3 rounded-2xl p-4 w-72 z-[36] shadow-xl border border-amber-500/25 bg-gradient-to-b from-[#2a2520] to-[#1e1e2e]"
           >
             <p className="text-sm font-semibold text-center mb-1 text-amber-200">
               {confirmState === 'discard' ? 'Session under 30s' : 'Stop grinding?'}
@@ -91,10 +104,10 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
           )}
           <button
             onClick={handleStartStop}
-            className={`relative ${isActive ? 'w-[95px] py-3' : 'min-w-[160px] px-10 py-4'} rounded-2xl font-bold text-sm transition-colors duration-150 active:scale-[0.93] ${
+            className={`relative rounded-2xl font-bold transition-colors duration-150 active:scale-[0.93] ${
               isActive
-                ? 'bg-discord-red text-white hover:bg-red-600'
-                : 'bg-cyber-neon text-discord-darker text-base shadow-glow hover:shadow-[0_0_30px_rgba(0,255,136,0.5)]'
+                ? 'w-[95px] h-[42px] text-sm bg-discord-red text-white hover:bg-red-600'
+                : 'min-w-[160px] px-10 py-4 text-base bg-cyber-neon text-discord-darker shadow-glow hover:shadow-[0_0_30px_rgba(0,255,136,0.5)]'
             }`}
           >
             {isActive ? 'STOP' : 'GRIND'}
@@ -103,7 +116,7 @@ export function SessionControls({ glowPulse }: SessionControlsProps) {
         {isActive && (
           <button
             onClick={handlePauseResume}
-            className="w-[95px] py-3 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-150 active:scale-95 border-2 border-[#5865F2]/50 bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/25 hover:border-[#5865F2]/70 hover:shadow-[0_0_20px_rgba(88,101,242,0.2)]"
+            className="w-[95px] h-[42px] rounded-2xl font-bold text-[13px] whitespace-nowrap transition-all duration-150 active:scale-95 border-2 border-[#5865F2]/50 bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/25 hover:border-[#5865F2]/70 hover:shadow-[0_0_20px_rgba(88,101,242,0.2)] flex items-center justify-center pt-0.5"
           >
             {isPaused ? 'RESUME' : 'PAUSE'}
           </button>

@@ -18,6 +18,7 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
   const [totalSkillLevel, setTotalSkillLevel] = useState(0)
   const [persona, setPersona] = useState<{ emoji: string; label: string; description: string } | null>(null)
   const [showPersonaTooltip, setShowPersonaTooltip] = useState(false)
+  const [showBadgeTooltip, setShowBadgeTooltip] = useState<string | null>(null)
   const [frameId, setFrameId] = useState<string | null>(null)
   const [badgeIds, setBadgeIds] = useState<string[]>([])
   const [streak, setStreak] = useState(0)
@@ -67,15 +68,24 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
       <div className="flex items-center justify-between gap-3 w-full border border-white/10 rounded-full px-3 py-2 bg-discord-card/30">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           {/* Avatar */}
-          <button onClick={() => { playClickSound(); onNavigateProfile?.() }} className={`relative shrink-0 ${activeFrame ? `frame-style-${activeFrame.style}` : ''}`} title="Profile">
+          <button
+            onClick={() => { playClickSound(); onNavigateProfile?.() }}
+            className={`relative shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm hover:brightness-110 transition-all ${
+              activeFrame ? `frame-style-${activeFrame.style}` : ''
+            }`}
+            title="Profile"
+          >
             {activeFrame && (
-              <div className="frame-ring absolute -inset-1 rounded-full" style={{ background: activeFrame.gradient, opacity: 0.7, color: activeFrame.color, borderColor: activeFrame.color }} />
+              <div
+                className="frame-ring absolute -inset-[1.5px] rounded-full"
+                style={{ background: activeFrame.gradient, opacity: 0.25, borderColor: activeFrame.color }}
+              />
             )}
             <div
-              className={`frame-avatar relative w-8 h-8 rounded-full bg-discord-card flex items-center justify-center text-base hover:scale-105 transition-transform ${
-                activeFrame ? 'border-2' : 'border border-white/10'
+              className={`frame-avatar relative w-full h-full rounded-full flex items-center justify-center ${
+                activeFrame ? 'border border-[1px]' : 'border border-white/[0.06]'
               }`}
-              style={activeFrame ? { borderColor: activeFrame.color } : undefined}
+              style={activeFrame ? { borderColor: `${activeFrame.color}60` } : undefined}
             >
               {avatar}
             </div>
@@ -131,10 +141,20 @@ export function ProfileBar({ onNavigateProfile }: ProfileBarProps) {
               {badgeIds.map(bId => {
                 const badge = BADGES.find(b => b.id === bId)
                 return badge ? (
-                  <span key={bId} className="text-[8px] leading-none px-1 py-0.5 rounded-md border font-medium"
-                    style={{ borderColor: `${badge.color}30`, backgroundColor: `${badge.color}10`, color: badge.color }} title={badge.name}>
-                    {badge.icon}
-                  </span>
+                  <div key={bId} className="relative shrink-0 flex items-center" onMouseEnter={() => setShowBadgeTooltip(bId)} onMouseLeave={() => setShowBadgeTooltip(null)}>
+                    <span className="w-5 h-5 flex items-center justify-center text-[11px] leading-none rounded-sm border font-medium cursor-default"
+                      style={{ borderColor: `${badge.color}40`, backgroundColor: `${badge.color}15`, color: badge.color }}>
+                      {badge.icon}
+                    </span>
+                    {showBadgeTooltip === bId && (
+                      <div className="absolute left-0 top-full mt-1.5 w-36 px-2.5 py-2 rounded-lg bg-discord-card border border-white/10 text-[10px] text-gray-300 z-20 shadow-xl pointer-events-none">
+                        <p className="font-medium text-white">{badge.icon} {badge.name}</p>
+                        <p className="text-gray-500 mt-1 leading-relaxed break-words">
+                          {badge.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 ) : null
               })}
 
