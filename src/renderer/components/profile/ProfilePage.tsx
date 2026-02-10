@@ -255,10 +255,6 @@ export function ProfilePage({ onBack }: { onBack?: () => void }) {
               </div>
             )}
 
-            {persona && (
-              <span className="text-[10px] text-gray-500">{persona.emoji} {persona.label}</span>
-            )}
-
             {/* XP bar */}
             <div className="mt-1.5">
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
