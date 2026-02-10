@@ -79,6 +79,7 @@ function createWindow() {
       preload: path.join(__dirname, '../../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
     },
     frame: true,
     backgroundColor: '#11111b',

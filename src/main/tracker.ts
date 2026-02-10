@@ -14,9 +14,13 @@ function getPowerShellPath(): string {
 
 let detectorProcess: ChildProcess | null = null
 let latestWinInfo: { appName: string; title: string; keys: number; idleMs: number } | null = null
+let latestWinInfoTime = 0 // timestamp of last latestWinInfo update (for staleness detection)
 let stdoutBuffer = ''
 let detectorRestartTimeout: NodeJS.Timeout | null = null
 let detectorRestartCount = 0
+let detectorLivenessRestarts = 0 // count of restarts triggered by staleness check (capped at 3)
+const MAX_LIVENESS_RESTARTS = 3
+const STALE_THRESHOLD_MS = 6000 // 6s = 4 missed detector cycles (1.5s each)
 
 /**
  * A single persistent PowerShell process that:
@@ -156,6 +160,7 @@ function parseLine(line: string): void {
   const idleMs = parseInt(parts[parts.length - 1], 10) || 0
   const title = parts.slice(1, -2).join('|').replace(/&#124;/g, '|').trim()
   latestWinInfo = { appName, title, keys, idleMs }
+  latestWinInfoTime = Date.now()
   if (!hasReceivedWinLine) {
     hasReceivedWinLine = true
     log.info('[tracker] First window data received', { appName, title: title.slice(0, 50) })
@@ -284,10 +289,16 @@ function startWindowDetector(): void {
     }
   })
 
+  // Capture reference so exit/error handlers from an OLD process don't
+  // overwrite the reference to a NEWLY started detector (race condition).
+  const thisProcess = detectorProcess
+
   detectorProcess.on('exit', (code, signal) => {
     log.info('[tracker] Detector process exited', { code, signal })
-    detectorProcess = null
-    stdoutBuffer = ''
+    if (detectorProcess === thisProcess) {
+      detectorProcess = null
+      stdoutBuffer = ''
+    }
     if (detectorScriptPath) {
       try { fs.unlinkSync(detectorScriptPath) } catch { /* ignore */ }
       detectorScriptPath = null
@@ -296,7 +307,9 @@ function startWindowDetector(): void {
 
   detectorProcess.on('error', (err) => {
     log.error('[tracker] Detector process error:', err)
-    detectorProcess = null
+    if (detectorProcess === thisProcess) {
+      detectorProcess = null
+    }
     if (detectorScriptPath) {
       try { fs.unlinkSync(detectorScriptPath) } catch { /* ignore */ }
       detectorScriptPath = null
@@ -500,6 +513,16 @@ function poll(): void {
   if (isPaused) return
   const now = Date.now()
 
+  // Detector liveness check: if we have data but it's stale, the detector likely crashed
+  if (latestWinInfo && latestWinInfoTime > 0 && (now - latestWinInfoTime) > STALE_THRESHOLD_MS) {
+    if (detectorLivenessRestarts < MAX_LIVENESS_RESTARTS && !detectorProcess) {
+      detectorLivenessRestarts++
+      log.warn('[tracker] Detector data stale for ' + Math.round((now - latestWinInfoTime) / 1000) + 's — restarting detector (attempt ' + detectorLivenessRestarts + '/' + MAX_LIVENESS_RESTARTS + ')')
+      stopWindowDetector()
+      startWindowDetector()
+    }
+  }
+
   if (latestWinInfo) {
     const { appName: rawName, title: windowTitle, keys } = latestWinInfo
     totalSessionKeystrokes += keys
@@ -550,7 +573,9 @@ export function getTrackerApi() {
       totalSessionKeystrokes = 0
       isIdle = false
       latestWinInfo = null
+      latestWinInfoTime = 0
       detectorRestartCount = 0
+      detectorLivenessRestarts = 0
       pollInterval = setInterval(poll, POLL_INTERVAL_MS)
       poll() // run immediately so we show "Detecting..." then update when first WIN line arrives
       setTimeout(poll, 800) // and again after detector had time to output (script loop is 1.5s)

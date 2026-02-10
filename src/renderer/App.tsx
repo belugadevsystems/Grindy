@@ -33,7 +33,7 @@ export default function App() {
   const [streakCount, setStreakCount] = useState(0)
 
   // Global presence: always is_online while app is open
-  const { status, currentActivity } = useSessionStore()
+  const { status, currentActivity, setCurrentActivity } = useSessionStore()
   const presenceLabel = currentActivity && status === 'running'
     ? (() => {
       const skill = getSkillById(categoryToSkillId(currentActivity.category))
@@ -46,6 +46,19 @@ export default function App() {
   useKeyboardShortcuts()
   useFriends() // run so friend presence polling + milestone toasts work on all tabs
   useChat(null) // run so message badges and realtime updates work on all tabs
+
+  // Global activity listener — must live here (not HomePage) so updates arrive on ALL tabs
+  useEffect(() => {
+    const api = typeof window !== 'undefined' ? window.electronAPI : null
+    if (!api?.tracker?.onActivityUpdate) return
+    const unsub = api.tracker.onActivityUpdate((a) => {
+      setCurrentActivity(a as Parameters<typeof setCurrentActivity>[0])
+    })
+    api.tracker.getCurrentActivity?.().then((a) => {
+      if (a) setCurrentActivity(a as Parameters<typeof setCurrentActivity>[0])
+    }).catch(() => {})
+    return unsub
+  }, [setCurrentActivity])
 
   // Pre-warm audio context on first user gesture
   useEffect(() => {
