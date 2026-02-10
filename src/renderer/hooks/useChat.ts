@@ -116,6 +116,40 @@ export function useChat(peerId: string | null = null) {
     [user?.id, fetchUnreadCount]
   )
 
+  const getRecentConversations = useCallback(
+    async (limit: number = 3) => {
+      if (!supabase || !user?.id) return []
+      
+      // Get all messages where user is sender or receiver
+      const { data: allMessages, error } = await supabase
+        .from('messages')
+        .select('id, sender_id, receiver_id, body, created_at, read_at')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+      
+      if (error || !allMessages) return []
+      
+      // Group by conversation partner and get most recent message per partner
+      const conversationMap = new Map<string, ChatMessage>()
+      
+      for (const msg of allMessages) {
+        const partnerId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
+        if (!conversationMap.has(partnerId)) {
+          conversationMap.set(partnerId, msg as ChatMessage)
+        }
+      }
+      
+      // Convert to array and sort by most recent, then limit
+      const recentConversations = Array.from(conversationMap.entries())
+        .map(([partnerId, message]) => ({ partnerId, message }))
+        .sort((a, b) => new Date(b.message.created_at).getTime() - new Date(a.message.created_at).getTime())
+        .slice(0, limit)
+      
+      return recentConversations
+    },
+    [user?.id]
+  )
+
   return {
     messages,
     loading,
@@ -124,5 +158,6 @@ export function useChat(peerId: string | null = null) {
     sendMessage,
     markConversationRead,
     fetchUnreadCount,
+    getRecentConversations,
   }
 }
