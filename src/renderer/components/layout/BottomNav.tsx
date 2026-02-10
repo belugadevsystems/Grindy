@@ -24,7 +24,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const hasUnclaimedLoot = currentAlert && !currentAlert.claimed
 
   return (
-    <div className="shrink-0 flex justify-center pb-3 pt-1">
+    <div className="flex justify-center pb-3 pt-1 bg-discord-darker">
       <nav className="flex items-center gap-4 rounded-full bg-[#1a1a2e] border border-white/[0.07] px-2.5 py-1.5">
         {tabs.map((tab) => {
           const active = activeTab === tab.id

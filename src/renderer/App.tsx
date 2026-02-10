@@ -15,6 +15,7 @@ import { LootDrop } from './components/alerts/LootDrop'
 import { FriendToasts } from './components/alerts/FriendToasts'
 import { SkillLevelUpModal } from './components/home/SkillLevelUpModal'
 import { useFriends } from './hooks/useFriends'
+import { useChat } from './hooks/useChat'
 import { UpdateBanner } from './components/UpdateBanner'
 import { useSessionStore } from './stores/sessionStore'
 import { categoryToSkillId, getSkillById } from './lib/skills'
@@ -42,7 +43,8 @@ export default function App() {
 
   useProfileSync()
   useKeyboardShortcuts()
-  useFriends() // run so friend presence polling + online/leveling toasts work on all tabs
+  useFriends() // run so friend presence polling + milestone toasts work on all tabs
+  useChat(null) // run so message badges and realtime updates work on all tabs
 
   // Pre-warm audio context on first user gesture
   useEffect(() => {
@@ -97,9 +99,9 @@ export default function App() {
 
   return (
     <AuthGate>
-      <div className="flex flex-col h-full bg-discord-darker overflow-x-hidden">
+      <div className="relative h-full w-full bg-discord-darker overflow-hidden">
         <UpdateBanner />
-        <main className="flex-1 overflow-auto">
+        <main className="absolute inset-0 overflow-y-auto overflow-x-hidden pb-20">
           <AnimatePresence mode="wait">
             {activeTab === 'home' && (
               <HomePage
@@ -114,7 +116,9 @@ export default function App() {
             {activeTab === 'settings' && <SettingsPage key="settings" />}
           </AnimatePresence>
         </main>
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="fixed bottom-0 left-0 right-0 z-30">
+          <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
         <AnimatePresence>
           {showStreak && streakCount >= 2 && (
             <StreakOverlay streak={streakCount} onClose={() => setShowStreak(false)} />

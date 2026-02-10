@@ -1,13 +1,15 @@
 import { create } from 'zustand'
 
-export type FriendToastType = 'online' | 'leveling'
+export type FriendToastType = 'online' | 'level_up' | 'xp_milestone'
 
 export interface FriendToast {
   id: string
   type: FriendToastType
   friendName: string
-  /** For leveling: skill name e.g. "Developer" */
-  skillName?: string
+  /** For level_up: new level reached */
+  newLevel?: number
+  /** For xp_milestone: XP amount reached */
+  xpAmount?: number
   createdAt: number
 }
 
@@ -16,7 +18,7 @@ const MAX_TOASTS = 3
 
 interface FriendToastStore {
   toasts: FriendToast[]
-  push: (payload: { type: FriendToastType; friendName: string; skillName?: string }) => void
+  push: (payload: { type: FriendToastType; friendName: string; newLevel?: number; xpAmount?: number }) => void
   dismiss: (id: string) => void
   dismissAll: () => void
 }

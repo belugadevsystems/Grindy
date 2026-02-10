@@ -131,7 +131,7 @@ export function MiniChatWidget() {
   if (!user) return null
 
   return (
-    <div ref={widgetRef} className="fixed bottom-20 left-4 z-40">
+    <div ref={widgetRef} className="fixed bottom-24 left-4 z-40">
       {/* Circular Button */}
       <AnimatePresence>
         {widgetState === 'collapsed' && (

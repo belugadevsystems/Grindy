@@ -133,7 +133,7 @@ export function useFriends() {
         }
       }
 
-      // Friend toasts: came online / started leveling (only after we have a previous snapshot)
+      // Friend toasts: came online, level up, XP milestones (only after we have a previous snapshot)
       const prev = previousFriendsRef.current
       if (prev !== null) {
         const name = (f: FriendProfile) => f.username?.trim() || 'Friend'
@@ -142,14 +142,13 @@ export function useFriends() {
           if (!p?.is_online && friend.is_online) {
             pushFriendToast({ type: 'online', friendName: name(friend) })
           }
-          const act = friend.current_activity ?? ''
-          const prevAct = p?.current_activity ?? ''
-          if (act.startsWith('Leveling ')) {
-            const skillPart = act.slice(9).split(' · ')[0].trim()
-            const prevSkillPart = prevAct.startsWith('Leveling ') ? prevAct.slice(9).split(' · ')[0].trim() : ''
-            if (skillPart && skillPart !== prevSkillPart) {
-              pushFriendToast({ type: 'leveling', friendName: name(friend), skillName: skillPart })
-            }
+          // Level up
+          if (p && friend.level > p.level) {
+            pushFriendToast({ type: 'level_up', friendName: name(friend), newLevel: friend.level })
+          }
+          // XP milestone (every 1000 XP)
+          if (p && Math.floor(friend.xp / 1000) > Math.floor(p.xp / 1000)) {
+            pushFriendToast({ type: 'xp_milestone', friendName: name(friend), xpAmount: friend.xp })
           }
         }
       }

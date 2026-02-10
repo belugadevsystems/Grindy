@@ -36,7 +36,7 @@ export function MotivationBanner({ isRunning }: { isRunning: boolean }) {
 
   // Simple CSS crossfade — no AnimatePresence, no sequential exit→enter
   return (
-    <div className="relative h-10 flex items-center justify-center">
+    <div className="relative h-8 flex items-center justify-center">
       {/* Idle message */}
       <div
         className={`text-center transition-opacity duration-150 ${

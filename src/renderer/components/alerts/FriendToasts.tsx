@@ -18,13 +18,15 @@ export function FriendToasts() {
             className="pointer-events-auto rounded-xl bg-discord-card border border-white/10 shadow-lg px-3 py-2.5 flex items-center gap-2"
           >
             <span className="text-base shrink-0">
-              {t.type === 'online' ? '🟢' : '⚡'}
+              {t.type === 'online' ? '🟢' : t.type === 'level_up' ? '⬆️' : '⚡'}
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-xs text-white font-medium truncate">
                 {t.type === 'online'
                   ? `${t.friendName} is online`
-                  : `${t.friendName} started ${t.skillName ?? 'grinding'}`}
+                  : t.type === 'level_up'
+                  ? `${t.friendName} reached level ${t.newLevel}`
+                  : `${t.friendName} hit ${t.xpAmount} XP`}
               </p>
             </div>
             <button

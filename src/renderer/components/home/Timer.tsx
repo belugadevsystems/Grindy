@@ -26,7 +26,7 @@ export function Timer() {
         {formatTime(elapsed)}
       </div>
       {/* Status line — always same height, instant switch */}
-      <div className="h-5 flex items-center justify-center gap-2 mt-3">
+      <div className="h-5 flex items-center justify-center gap-2 mt-1.5">
         {status !== 'idle' && (
           <p className="text-xs text-gray-500 font-mono">
             {status === 'running' ? '● grinding...' : '◆ on pause'}
