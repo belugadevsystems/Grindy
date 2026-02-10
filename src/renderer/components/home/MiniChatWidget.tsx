@@ -26,7 +26,7 @@ export function MiniChatWidget() {
   const [loading, setLoading] = useState(false)
   const widgetRef = useRef<HTMLDivElement>(null)
   
-  const chat = useChat(selectedFriend?.id ?? null)
+  const { messages, loading: chatLoading, sending, getConversation, sendMessage, markConversationRead, getRecentConversations } = useChat(selectedFriend?.id ?? null)
 
   // Close widget when clicking outside
   useEffect(() => {
@@ -51,7 +51,7 @@ export function MiniChatWidget() {
       setLoading(true)
       
       // Get recent conversations with actual messages
-      const recentChats = await chat.getRecentConversations(3)
+      const recentChats = await getRecentConversations(3)
       
       // Match with friend profiles
       const conversationsWithFriends = recentChats
@@ -72,15 +72,21 @@ export function MiniChatWidget() {
     }
 
     fetchRecent()
-  }, [widgetState, friends, unreadByFriendId, chat])
+  }, [widgetState, friends, unreadByFriendId, getRecentConversations])
+
+  // Fetch conversation when opening thread
+  useEffect(() => {
+    if (widgetState === 'thread' && selectedFriend) {
+      getConversation(selectedFriend.id)
+      markConversationRead(selectedFriend.id)
+    }
+  }, [widgetState, selectedFriend, getConversation, markConversationRead])
 
   // Open conversation thread
   const handleOpenThread = (friend: FriendProfile) => {
     playClickSound()
     setSelectedFriend(friend)
     setWidgetState('thread')
-    chat.getConversation(friend.id)
-    chat.markConversationRead(friend.id)
   }
 
   // Back to list
@@ -104,7 +110,7 @@ export function MiniChatWidget() {
   // Send message
   const handleSendMessage = async (text: string) => {
     if (!selectedFriend || !text.trim()) return
-    await chat.sendMessage(selectedFriend.id, text)
+    await sendMessage(selectedFriend.id, text)
   }
 
   // Format relative time
@@ -216,9 +222,9 @@ export function MiniChatWidget() {
             {widgetState === 'thread' && selectedFriend && (
               <MiniThread
                 friend={selectedFriend}
-                messages={chat.messages}
-                loading={chat.loading}
-                sending={chat.sending}
+                messages={messages}
+                loading={chatLoading}
+                sending={sending}
                 onSendMessage={handleSendMessage}
                 userId={user.id}
               />

@@ -13,6 +13,11 @@
     "electron:build": "npm run build && npm run clean:release && electron-builder --config electron-builder.yml",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/main --ext .ts",
+    "lint:fix": "eslint src/main --ext .ts --fix",
+    "type-check": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit",
+    "quality": "npm run type-check && npm run lint && npm run test",
     "push": "git push"
   },
   "dependencies": {
