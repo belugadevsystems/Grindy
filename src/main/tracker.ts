@@ -92,40 +92,24 @@ while ($true) {
         if ($pid2 -gt 0) {
             $pname = $null
             try {
-                $byWindow = Get-Process | Where-Object { $_.MainWindowHandle -eq $hwnd } | Select-Object -First 1
-                if ($byWindow -and $byWindow.ProcessName) { $pname = $byWindow.ProcessName }
+                $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
+                if ($proc -and $proc.ProcessName) { $pname = $proc.ProcessName }
             } catch { }
+            if (-not $pname) {
+                try {
+                    $byWindow = Get-Process | Where-Object { $_.MainWindowHandle -eq $hwnd } | Select-Object -First 1
+                    if ($byWindow -and $byWindow.ProcessName) { $pname = $byWindow.ProcessName }
+                } catch { }
+            }
             if (-not $pname) {
                 try {
                     $cim = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
                     if ($cim -and $cim.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim.Name) }
                 } catch { }
             }
-            if (-not $pname) {
-                try {
-                    $wmi = Get-WmiObject Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
-                    if ($wmi -and $wmi.Name) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($wmi.Name) }
-                } catch { }
-            }
-            if (-not $pname) {
-                $proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue
-                if ($proc) { $pname = $proc.ProcessName }
-            }
-            if (-not $pname) {
-                try {
-                    $byPid = Get-Process | Where-Object { $_.Id -eq $pid2 } | Select-Object -First 1
-                    if ($byPid -and $byPid.ProcessName) { $pname = $byPid.ProcessName }
-                } catch { }
-            }
-            if (-not $pname) {
-                try {
-                    $cim2 = Get-CimInstance Win32_Process -Filter ("ProcessId = " + $pid2) -ErrorAction SilentlyContinue
-                    if ($cim2 -and $cim2.ExecutablePath) { $pname = [System.IO.Path]::GetFileNameWithoutExtension($cim2.ExecutablePath) }
-                } catch { }
-            }
             $rawTitle = [WinApi]::GetTitle($hwnd)
             $title = ($rawTitle -replace '[\r\n]+', ' ' -replace '\|', '&#124;').Trim()
-            if ($pname -eq 'explorer') {
+            if ($pname -eq 'explorer' -and [string]::IsNullOrWhiteSpace($title)) {
                 [Console]::Out.WriteLine("WIN:Idle||" + $keys + "|" + $idleMs)
                 [Console]::Out.Flush()
             } elseif ($pname) {
@@ -529,9 +513,9 @@ function poll(): void {
       emitIdle(false)
     }
 
-    // Idle (desktop/explorer) and Unknown windows do not give XP — only "selected" app windows do
+    // Idle (desktop with no title) does not give XP; Unknown windows use title-based categorization
     const categories =
-      rawName === 'Idle' || rawName === 'Unknown'
+      rawName === 'Idle'
         ? (['idle'] as ActivityCategory[])
         : categorizeMultiple(rawName, windowTitle)
     const primaryCategory = categories[0] ?? 'other'
